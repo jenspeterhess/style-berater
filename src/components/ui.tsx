@@ -197,17 +197,22 @@ export function ProgressBar({ value }: { value?: number }) {
 /** Von unten einfahrendes Blatt für Auswahl, Bearbeiten und Rückfragen. */
 export function Sheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
   const ref = useRef<HTMLDivElement>(null);
+  // onClose wird bei jedem Neuzeichnen neu erzeugt. Über eine Referenz bleibt der Effekt unten trotzdem
+  // nur ans Öffnen gebunden – sonst würde das Blatt bei jeder Eingabe den Fokus aus dem Textfeld ziehen.
+  const close = useRef(onClose);
+  close.current = onClose;
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && close.current();
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
-    ref.current?.focus();
+    // Nur beim Öffnen fokussieren, und nur, wenn noch kein Feld im Blatt den Fokus hat (z. B. per autoFocus).
+    if (!ref.current?.contains(document.activeElement)) ref.current?.focus();
     return () => {
       document.removeEventListener("keydown", onKey);
       document.body.style.overflow = "";
     };
-  }, [open, onClose]);
+  }, [open]);
   if (!open) return null;
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-end justify-center">
