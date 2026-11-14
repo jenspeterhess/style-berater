@@ -169,6 +169,9 @@ export async function parseImportFile(file: File): Promise<ParsedDoc> {
 
 export const parseImportText = (text: string) => finish(text);
 
+/** Lesbarer Text aus kopiertem E-Mail-HTML – für den Fall, dass die Zwischenablage keinen reinen Text mitliefert. */
+export const htmlToText = (html: string) => readHtml(html).text.replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
+
 /**
  * Aus einer E-Mail kopierter Inhalt: Der Zwischenablage liegt neben dem Text auch das HTML bei.
  * Daraus kommen die Adressen der Produktbilder und die Produkt-Links – der sichtbare Text bleibt maßgeblich.

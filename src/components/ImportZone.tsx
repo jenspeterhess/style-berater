@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ClipboardPaste, FileUp, MailOpen } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { ACCEPTED_IMPORT, parseImportFile, parseImportPaste, parseImportText } from "@/lib/mail";
+import { ACCEPTED_IMPORT, htmlToText, parseImportFile, parseImportPaste, parseImportText } from "@/lib/mail";
 import { ARTIFACT } from "@/lib/target";
 import { runImport, type Stage } from "@/lib/pipelines";
 import { Button, FileInput, ProgressBar, Sheet, cx } from "./ui";
@@ -99,6 +99,12 @@ export function ImportZone({ compact }: { compact?: boolean }) {
           onPaste={(e) => {
             const html = e.clipboardData.getData("text/html");
             setPasted(html ? { html, images: (html.match(/<img\b/gi) ?? []).length } : null);
+            // Manche Mail-Programme legen nur HTML in die Zwischenablage. Dann den Text selbst daraus gewinnen,
+            // sonst bliebe das Feld leer.
+            if (html && !e.clipboardData.getData("text/plain").trim()) {
+              e.preventDefault();
+              setText(htmlToText(html));
+            }
           }}
           rows={9}
           autoFocus
