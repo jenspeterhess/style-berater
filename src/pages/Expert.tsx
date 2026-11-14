@@ -87,7 +87,6 @@ export default function Expert() {
 
   const advice = current?.advice;
   const parts = (advice?.item_ids ?? []).map((id) => wardrobe.find((i) => i.id === id)).filter((i): i is Item => !!i);
-  const age = active ? ageOf(active) : null;
   const lookKey = advice?.item_ids.join();
   return (
     <div className="flex flex-col gap-5 px-5 pt-[calc(env(safe-area-inset-top)+1.25rem)] pb-[calc(env(safe-area-inset-bottom)+2.5rem)]">
@@ -96,7 +95,7 @@ export default function Expert() {
           <ArrowLeft className="size-5" />
         </Link>
         <div className="min-w-0">
-          <p className="text-[13px] font-medium text-muted-foreground">{active ? `Für ${active.name}${age ? ` · ${age}` : ""}` : ""}</p>
+          <p className="text-[13px] font-medium text-muted-foreground">{active ? `Für ${active.name}` : ""}</p>
           <h1 className="text-[1.75rem] leading-[1.05]">Styling-Experte</h1>
         </div>
       </header>
