@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { callApi, errorMessage } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
-import { ageOf, setActivePerson, useActivePerson, useUpdatePerson, type Person } from "@/lib/people";
+import { setActivePerson, useActivePerson, useUpdatePerson, type Person } from "@/lib/people";
 import { byStatus, useItems } from "@/lib/data";
 import { AUDIENCES, type AudienceId } from "@shared/wardrobe";
 import { Button, Chip, Field, PageHeader, Sheet, cx, inputClass } from "@/components/ui";
@@ -102,14 +102,13 @@ export default function Settings() {
             {people.map((p) => {
               const on = p.id === active?.id;
               const count = byStatus(items, "wardrobe").filter((i) => i.person_id === p.id).length;
-              const age = ageOf(p);
               return (
                 <div key={p.id} className={cx("flex items-center gap-1 rounded-(--radius-card) bg-card pr-2 shadow-soft", on && "ring-2 ring-primary")}>
                   <button type="button" role="radio" aria-checked={on} className="flex min-w-0 flex-1 items-center gap-3.5 p-3.5 text-left" onClick={() => (setActivePerson(p.id), toast.success(`Schrank von ${p.name} ist offen`))}>
                     <span className={cx("grid size-11 shrink-0 place-items-center rounded-full text-[15px] font-bold", on ? "bg-primary text-primary-foreground" : "bg-muted")}>{on ? <Check className="size-5" /> : p.name.charAt(0).toUpperCase()}</span>
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-[15px] font-semibold">{p.name}</span>
-                      <span className="block text-xs text-muted-foreground">{[age ? `${age} Jahre` : null, count === 1 ? "1 Teil" : `${count} Teile`].filter(Boolean).join(" · ")}</span>
+                      <span className="block text-xs text-muted-foreground">{count === 1 ? "1 Teil" : `${count} Teile`}</span>
                     </span>
                   </button>
                   <button type="button" aria-label={`${p.name} bearbeiten`} className="grid size-11 shrink-0 place-items-center rounded-full" onClick={() => setEditing(p)}>
