@@ -1,9 +1,13 @@
 import { resizeImage, toBitmap } from "./images";
+import { ARTIFACT } from "./target";
 
 export type ParsedDoc = { text: string; images: Blob[]; imageUrls: string[] };
 
 const MAX_TEXT = 60_000;
-const MAX_IMAGES = 8;
+// Im Artefakt werden Bilder in mehreren Durchgängen zugeordnet, deshalb dürfen es dort mehr sein.
+const MAX_IMAGES = ARTIFACT ? 20 : 8;
+// Produktbilder in Bestellmails sind oft nur kleine Vorschaubilder.
+const MIN_SIDE = 80;
 const NOT_PRODUCT = /logo|icon|pixel|track|spacer|banner|facebook|instagram|twitter|pinterest|youtube|tiktok|badge|rating|star|open\.|beacon|footer|header|app-?store|google-?play/i;
 
 function finish(text: string, images: Blob[] = [], imageUrls: string[] = []): ParsedDoc {
@@ -38,7 +42,7 @@ async function usable(blobs: Blob[]) {
     if (out.length >= MAX_IMAGES) break;
     try {
       const bmp = await toBitmap(blob);
-      const ok = Math.min(bmp.width, bmp.height) >= 150 && Math.max(bmp.width, bmp.height) / Math.min(bmp.width, bmp.height) <= 3;
+      const ok = Math.min(bmp.width, bmp.height) >= MIN_SIDE && Math.max(bmp.width, bmp.height) / Math.min(bmp.width, bmp.height) <= 3;
       bmp.close();
       if (ok) out.push(await resizeImage(blob, 1024, "image/jpeg", 0.85));
     } catch {
@@ -81,7 +85,7 @@ async function parsePdf(file: File): Promise<ParsedDoc> {
       const content = await page.getTextContent();
       for (const item of content.items) if ("str" in item) text += item.str + (item.hasEOL ? "\n" : " ");
       text += "\n\n";
-      if (n <= 4 && images.length < 16) images.push(...(await pdfPageImages(pdfjs, page)));
+      if (n <= 8 && images.length < 60) images.push(...(await pdfPageImages(pdfjs, page)));
     }
   } finally {
     void task.destroy();
@@ -90,7 +94,7 @@ async function parsePdf(file: File): Promise<ParsedDoc> {
   return finish(text, await usable(images));
 }
 
-type PdfImage = { bitmap?: ImageBitmap; data?: Uint8ClampedArray; width: number; height: number };
+type PdfImage = { bitmap?: ImageBitmap; data?: Uint8ClampedArray | Uint8Array; width: number; height: number };
 
 /** Eingebettete Bilder einer PDF-Seite (z. B. Produktfotos auf einer Rechnung). */
 async function pdfPageImages(pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.mjs"), page: import("pdfjs-dist/legacy/build/pdf.mjs").PDFPageProxy) {
@@ -112,14 +116,24 @@ async function pdfPageImages(pdfjs: typeof import("pdfjs-dist/legacy/build/pdf.m
           resolve(null);
         }
       });
-      if (!img || Math.min(img.width, img.height) < 150) continue;
+      if (!img || Math.min(img.width, img.height) < MIN_SIDE) continue;
       const canvas = document.createElement("canvas");
       canvas.width = img.width;
       canvas.height = img.height;
       const ctx = canvas.getContext("2d")!;
       if (img.bitmap) ctx.drawImage(img.bitmap, 0, 0);
       else if (img.data && img.data.length === img.width * img.height * 4) ctx.putImageData(new ImageData(new Uint8ClampedArray(img.data), img.width, img.height), 0, 0);
-      else continue;
+      else if (img.data && img.data.length === img.width * img.height * 3) {
+        // Manche Browser liefern die Pixel ohne Deckkraft-Kanal (RGB statt RGBA).
+        const rgba = new Uint8ClampedArray(img.width * img.height * 4);
+        for (let s = 0, d = 0; s < img.data.length; s += 3, d += 4) {
+          rgba[d] = img.data[s]!;
+          rgba[d + 1] = img.data[s + 1]!;
+          rgba[d + 2] = img.data[s + 2]!;
+          rgba[d + 3] = 255;
+        }
+        ctx.putImageData(new ImageData(rgba, img.width, img.height), 0, 0);
+      } else continue;
       const blob = await new Promise<Blob | null>((r) => canvas.toBlob(r, "image/jpeg", 0.9));
       if (blob) out.push(blob);
     }

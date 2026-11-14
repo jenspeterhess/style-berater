@@ -4,6 +4,7 @@ import { blobToDataUrl, dataUrlToBlob, resizeImage } from "./images";
 import type { ParsedDoc } from "./mail";
 import { removeImages, uploadImage } from "./storage";
 import { supabase } from "./supabase";
+import { ARTIFACT } from "./target";
 import type { CategoryId, Item } from "@shared/wardrobe";
 
 export type Stage = { label: string; progress?: number };
@@ -73,12 +74,12 @@ export async function runImport(doc: ParsedDoc, onStage: (s: Stage) => void) {
 
   const { data: record, error } = await supabase
     .from("imports")
-    .insert({ title: result.title, content: doc.text, store: result.store, purchase_date: result.purchase_date, total: result.total, currency: result.currency })
+    .insert({ title: result.title, content: doc.text, store: result.store, purchase_date: result.purchase_date, total: result.total, currency: result.currency, ...(ARTIFACT ? { found_images: doc.images.length, matched_images: result.articles.filter((a) => a.image).length } : {}) })
     .select("id")
     .single();
   if (error || !record) throw new Error("Der Import konnte nicht gespeichert werden. Bitte versuche es erneut.");
 
-  let n = 0;
+  let n = 0, withImage = 0;
   for (const a of result.articles) {
     n++;
     let original_path: string | null = null, cutout_path: string | null = null;
@@ -98,6 +99,7 @@ export async function runImport(doc: ParsedDoc, onStage: (s: Stage) => void) {
       store: result.store, currency: result.currency, purchase_date: result.purchase_date,
     });
     if (itemError) await removeImages([original_path, cutout_path]);
+    else if (original_path) withImage++;
   }
-  return { importId: record.id as string, count: result.articles.length, title: result.title };
+  return { importId: record.id as string, count: result.articles.length, withImage, title: result.title };
 }

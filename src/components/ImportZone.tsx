@@ -22,10 +22,10 @@ export function ImportZone({ compact }: { compact?: boolean }) {
     setStage({ label: "Datei wird gelesen" });
     try {
       const doc = await load();
-      const { count } = await runImport(doc, setStage);
+      const { count, withImage } = await runImport(doc, setStage);
       await Promise.all([qc.invalidateQueries({ queryKey: ["items"] }), qc.invalidateQueries({ queryKey: ["imports"] })]);
       if (count === 0) toast.message("Gespeichert, aber keine Kleidungsstücke gefunden.", { description: "Der Import liegt im Eingang." });
-      else toast.success(count === 1 ? "1 Teil liegt jetzt im Eingang." : `${count} Teile liegen jetzt im Eingang.`);
+      else toast.success(count === 1 ? "1 Teil liegt jetzt im Eingang." : `${count} Teile liegen jetzt im Eingang.`, { description: withImage === count ? "Alle mit Produktbild." : withImage ? `${withImage} davon mit Produktbild.` : "Produktbilder ließen sich nicht übernehmen. Du kannst je Teil ein Foto ergänzen." });
       navigate("/eingang");
     } catch (e) {
       toast.error(errorMessage(e));
