@@ -62,7 +62,10 @@ async function parseEml(file: File): Promise<ParsedDoc> {
 
 async function parsePdf(file: File): Promise<ParsedDoc> {
   const pdfjs = await import("pdfjs-dist");
-  pdfjs.GlobalWorkerOptions.workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  let workerSrc = (await import("pdfjs-dist/build/pdf.worker.min.mjs?url")).default;
+  // Ist der Worker ins Skript eingebettet (Artefakt), wird er als Blob gestartet.
+  if (workerSrc.startsWith("data:")) workerSrc = URL.createObjectURL(new Blob([Uint8Array.from(atob(workerSrc.slice(workerSrc.indexOf(",") + 1)), (c) => c.charCodeAt(0))], { type: "text/javascript" }));
+  pdfjs.GlobalWorkerOptions.workerSrc = workerSrc;
   const task = pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) });
   let pdf;
   try {

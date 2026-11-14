@@ -8,6 +8,7 @@ import { useSession } from "@/lib/session";
 import { useSuggest } from "@/lib/suggest";
 import { LookCard } from "@/components/LookCard";
 import { Button, Chip, ChipRow, Empty, ModeToggle, PageHeader, Spinner, useStoredMode } from "@/components/ui";
+import { ARTIFACT } from "@/lib/target";
 import { OCCASIONS, type OccasionId, type Suggestion } from "@shared/wardrobe";
 
 type Stored = { day: string; occasion: OccasionId; suggestion: Suggestion; seen: string[][] };
@@ -86,7 +87,7 @@ export default function Today() {
               <UserRound className="size-5" strokeWidth={1.5} />
             </span>
             <span className="flex-1">
-              <span className="block text-sm font-semibold">Avatar erstellen</span>
+              <span className="block text-sm font-semibold">{ARTIFACT ? "Eigenes Foto hinzufügen" : "Avatar erstellen"}</span>
               <span className="block text-xs text-muted-foreground">Damit du Outfits an dir selbst siehst</span>
             </span>
             <ChevronRight className="size-4" />
@@ -123,7 +124,7 @@ export default function Today() {
           {current && current.occasion === chosen ? (
             <div className="mt-4 px-5">
               <div className="mb-3 flex items-center justify-between">
-                <ModeToggle mode={mode} onChange={setMode} />
+                {ARTIFACT ? <span /> : <ModeToggle mode={mode} onChange={setMode} />}
                 <Button size="sm" variant="ghost" busy={suggest.isPending} onClick={() => ask(true)}>
                   {!suggest.isPending && <RefreshCw className="size-4" />} Anderer Vorschlag
                 </Button>

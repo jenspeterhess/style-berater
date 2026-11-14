@@ -1,3 +1,4 @@
+import { uuid } from "@/lib/uuid";
 import { useSyncExternalStore } from "react";
 import type { QueryClient } from "@tanstack/react-query";
 import { errorMessage } from "./api";
@@ -39,7 +40,7 @@ async function work(qc: QueryClient) {
 
 export function enqueue(files: File[], qc: QueryClient) {
   const images = files.filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name));
-  entries = [...images.map((file) => ({ id: crypto.randomUUID(), file, preview: URL.createObjectURL(file), stage: { label: "Wartet" } })), ...entries];
+  entries = [...images.map((file) => ({ id: uuid(), file, preview: URL.createObjectURL(file), stage: { label: "Wartet" } })), ...entries];
   emit();
   void work(qc);
   return images.length;

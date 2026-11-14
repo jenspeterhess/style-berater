@@ -1,5 +1,7 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { ARTIFACT } from "@/lib/target";
 import { ArrowLeft, ChevronRight, LogOut, Trash2, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { callApi, errorMessage } from "@/lib/api";
@@ -12,11 +14,20 @@ export default function Settings() {
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
   const [busy, setBusy] = useState(false);
+  const navigate = useNavigate();
+  const qc = useQueryClient();
 
   async function removeAll() {
     setBusy(true);
     try {
       await callApi("/api/delete-account", {});
+      if (ARTIFACT) {
+        toast.success("Alle deine Daten wurden gelöscht.");
+        localStorage.removeItem("heute");
+        qc.clear();
+        navigate("/willkommen", { replace: true });
+        return;
+      }
       toast.success("Alle Daten und dein Konto wurden gelöscht.");
       await supabase.auth.signOut({ scope: "local" });
     } catch (e) {
@@ -40,13 +51,15 @@ export default function Settings() {
       <div className="mx-5 mt-2 divide-y divide-border overflow-hidden rounded-(--radius-card) bg-card shadow-soft">
         <Link to="/avatar" className={row}>
           <UserRound className="size-5" strokeWidth={1.5} />
-          <span className="flex-1">Avatar ansehen oder neu erstellen</span>
+          <span className="flex-1">{ARTIFACT ? "Mein Foto für die Anprobe" : "Avatar ansehen oder neu erstellen"}</span>
           <ChevronRight className="size-4 text-muted-foreground" />
         </Link>
-        <button type="button" className={row} onClick={() => supabase.auth.signOut()}>
-          <LogOut className="size-5" strokeWidth={1.5} />
-          <span className="flex-1">Abmelden</span>
-        </button>
+        {!ARTIFACT && (
+          <button type="button" className={row} onClick={() => supabase.auth.signOut()}>
+            <LogOut className="size-5" strokeWidth={1.5} />
+            <span className="flex-1">Abmelden</span>
+          </button>
+        )}
       </div>
       <div className="mx-5 mt-5 overflow-hidden rounded-(--radius-card) bg-card shadow-soft">
         <button type="button" className={`${row} text-destructive`} onClick={() => setOpen(true)}>
@@ -54,10 +67,10 @@ export default function Settings() {
           <span className="flex-1">Alle meine Daten löschen</span>
         </button>
       </div>
-      <p className="mx-7 mt-4 text-xs leading-relaxed text-muted-foreground">Deine Fotos und Daten sind privat und nur für dein Konto sichtbar. Zur Erkennung und Anprobe werden Bilder an KI-Modelle von Anthropic und OpenAI gesendet.</p>
+      <p className="mx-7 mt-4 text-xs leading-relaxed text-muted-foreground">{ARTIFACT ? "Deine Fotos und Daten liegen privat in deinem Claude-Konto. Zur Erkennung werden Bilder und importierte Texte an Claude gesendet." : "Deine Fotos und Daten sind privat und nur für dein Konto sichtbar. Zur Erkennung und Anprobe werden Bilder an KI-Modelle von Anthropic und OpenAI gesendet."}</p>
 
       <Sheet open={open} onClose={() => !busy && setOpen(false)} title="Wirklich alles löschen?">
-        <p className="text-sm leading-relaxed text-muted-foreground">Das entfernt alle Fotos, Teile, Outfits, importierten E-Mails und dein Konto. Das lässt sich nicht rückgängig machen.</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">{ARTIFACT ? "Das entfernt alle Fotos, Teile, Outfits und importierten E-Mails. Das lässt sich nicht rückgängig machen." : "Das entfernt alle Fotos, Teile, Outfits, importierten E-Mails und dein Konto. Das lässt sich nicht rückgängig machen."}</p>
         <div className="mt-5">
           <Field label="Tippe LÖSCHEN zur Bestätigung">
             <input className={inputClass} value={word} onChange={(e) => setWord(e.target.value)} autoCapitalize="characters" autoComplete="off" />

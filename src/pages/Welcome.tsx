@@ -7,11 +7,12 @@ import { supabase } from "@/lib/supabase";
 import { useSession } from "@/lib/session";
 import { useProfile } from "@/lib/data";
 import { Button } from "@/components/ui";
+import { ARTIFACT } from "@/lib/target";
 
 const POINTS = [
   { icon: Lock, title: "Privat", text: "Deine Fotos, Teile und Looks sieht nur dein Konto." },
-  { icon: Sparkles, title: "KI-Verarbeitung", text: "Damit Teile erkannt und Outfits an deinem Avatar gezeigt werden können, senden wir deine Bilder zur Verarbeitung an KI-Modelle von Anthropic (Claude) und OpenAI." },
-  { icon: ScanFace, title: "Deine Entscheidung", text: "Du kannst jederzeit alle Daten samt Konto in den Einstellungen löschen." },
+  { icon: Sparkles, title: "KI-Verarbeitung", text: ARTIFACT ? "Damit Teile erkannt und Kaufangaben gelesen werden können, werden deine Fotos und importierten Texte zur Verarbeitung an Claude gesendet." : "Damit Teile erkannt und Outfits an deinem Avatar gezeigt werden können, senden wir deine Bilder zur Verarbeitung an KI-Modelle von Anthropic (Claude) und OpenAI." },
+  { icon: ScanFace, title: "Deine Entscheidung", text: ARTIFACT ? "Du kannst jederzeit alle deine Daten in den Einstellungen löschen." : "Du kannst jederzeit alle Daten samt Konto in den Einstellungen löschen." },
 ];
 
 export default function Welcome() {
@@ -54,9 +55,11 @@ export default function Welcome() {
         <Button block busy={busy} onClick={agree}>
           Einverstanden, weiter
         </Button>
-        <button type="button" onClick={() => supabase.auth.signOut()} className="mt-2 h-12 w-full text-sm font-semibold text-muted-foreground">
-          Abbrechen und abmelden
-        </button>
+        {!ARTIFACT && (
+          <button type="button" onClick={() => supabase.auth.signOut()} className="mt-2 h-12 w-full text-sm font-semibold text-muted-foreground">
+            Abbrechen und abmelden
+          </button>
+        )}
       </div>
     </div>
   );

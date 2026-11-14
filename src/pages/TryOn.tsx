@@ -6,6 +6,8 @@ import { errorMessage } from "@/lib/api";
 import { byStatus, useItems, useSaveOutfit, wearable } from "@/lib/data";
 import { useTryOn } from "@/lib/tryon";
 import { Button, Empty, ItemImage, ModeToggle, PageHeader, RenderOverlay, Spinner, StorageImage, cx, useStoredMode } from "@/components/ui";
+import { AvatarLook } from "@/components/AvatarLook";
+import { ARTIFACT } from "@/lib/target";
 import { TRYON_ROWS, formatDate, rowOf, type Item } from "@shared/wardrobe";
 
 type Selection = Record<string, string | undefined>;
@@ -46,7 +48,7 @@ export default function TryOn() {
       </div>
     );
 
-  if (!tryOn.avatarPath)
+  if (!tryOn.avatarPath && !ARTIFACT)
     return (
       <div>
         <PageHeader title="Anprobe" />
@@ -59,11 +61,22 @@ export default function TryOn() {
     );
 
   const shown = tryOn.imagePath;
-  const saved = !!shown && savedKey === tryOn.key;
+  const chosen = ids.map((id) => list.find((i) => i.id === id)).filter((i): i is Item => !!i);
+  const saved = (ARTIFACT || !!shown) && savedKey === tryOn.key;
   return (
     <div className="pb-20">
-      <PageHeader title="Anprobe" action={<ModeToggle mode={mode} onChange={setMode} />} />
-      <div className="relative mx-5 overflow-hidden rounded-(--radius-card) shadow-soft">
+      <PageHeader title="Anprobe" subtitle={ARTIFACT ? "Tippe Teile an – die Vorschau entsteht sofort." : undefined} action={ARTIFACT ? undefined : <ModeToggle mode={mode} onChange={setMode} />} />
+      {ARTIFACT && (
+        <div className="studio-bg relative mx-5 overflow-hidden rounded-(--radius-card) shadow-soft">
+          <AvatarLook avatarPath={tryOn.avatarPath} items={chosen} className="mx-auto aspect-[2/3] max-h-[58dvh] bg-none!" />
+          {!tryOn.avatarPath && !chosen.length && (
+            <Link to="/avatar" className="absolute inset-x-0 top-1/2 mx-auto w-fit -translate-y-1/2 rounded-full bg-card px-5 py-3 text-sm font-semibold shadow-lift">
+              Eigenes Foto hinzufügen
+            </Link>
+          )}
+        </div>
+      )}
+      <div className={cx("relative mx-5 overflow-hidden rounded-(--radius-card) shadow-soft", ARTIFACT && "hidden")}>
         <StorageImage path={shown ?? tryOn.avatarPath} alt={shown ? "Deine Auswahl an deinem Avatar" : "Dein Avatar"} fit="cover" className="studio-bg aspect-[2/3] max-h-[58dvh] w-full" />
         {tryOn.running && <RenderOverlay label="Dein Look entsteht" hint={mode === "quality" ? "etwa eine Minute – du kannst solange weiterstöbern" : "etwa 20 Sekunden"} />}
         {ids.length > 0 && !shown && !tryOn.running && !tryOn.checking && <p className="absolute inset-x-0 bottom-3 mx-auto w-fit rounded-full bg-card/90 px-3.5 py-1.5 text-xs font-semibold shadow-soft backdrop-blur">Auswahl noch nicht anprobiert</p>}
@@ -114,7 +127,7 @@ export default function TryOn() {
           <button type="button" aria-label="Auswahl zurücksetzen" className="grid size-13 shrink-0 place-items-center rounded-full bg-card shadow-soft" onClick={() => setPicked({})}>
             <RotateCcw className="size-[18px]" />
           </button>
-          {shown ? (
+          {ARTIFACT || shown ? (
             <Button
               block
               variant={saved ? "soft" : "primary"}

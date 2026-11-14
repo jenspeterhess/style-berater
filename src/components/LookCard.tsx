@@ -6,6 +6,8 @@ import { errorMessage } from "@/lib/api";
 import { useSaveOutfit } from "@/lib/data";
 import { useTryOn } from "@/lib/tryon";
 import { Button, ItemImage, RenderOverlay, StorageImage, cx } from "./ui";
+import { AvatarLook } from "./AvatarLook";
+import { ARTIFACT } from "@/lib/target";
 import type { Item, Mode, Suggestion } from "@shared/wardrobe";
 
 /** Teile eines Looks als ruhige Collage – solange es noch kein Bild am Avatar gibt. */
@@ -33,15 +35,15 @@ export function LookCard({ suggestion, items, mode, className }: { suggestion: S
 
   return (
     <article className={cx("flex flex-col overflow-hidden rounded-(--radius-card) bg-card shadow-soft", className)}>
-      <div className={cx("relative w-full", tryOn.imagePath || tryOn.running ? "aspect-[2/3]" : "aspect-[4/5]")}>
-        {tryOn.imagePath ? <StorageImage path={tryOn.imagePath} alt={`${suggestion.title} an deinem Avatar`} fit="cover" className="studio-bg size-full" /> : <Collage items={parts} className="size-full" />}
+      <div className={cx("relative w-full", ARTIFACT || tryOn.imagePath || tryOn.running ? "aspect-[2/3]" : "aspect-[4/5]")}>
+        {ARTIFACT ? <AvatarLook avatarPath={tryOn.avatarPath} items={parts} className="size-full" /> : tryOn.imagePath ? <StorageImage path={tryOn.imagePath} alt={`${suggestion.title} an deinem Avatar`} fit="cover" className="studio-bg size-full" /> : <Collage items={parts} className="size-full" />}
         {tryOn.running && <RenderOverlay label="Dein Look entsteht" hint={mode === "quality" ? "etwa eine Minute" : "etwa 20 Sekunden"} />}
       </div>
       <div className="flex flex-1 flex-col px-4 pt-3.5 pb-4">
         <h3 className="text-2xl leading-tight">{suggestion.title}</h3>
         <p className="mt-1 text-sm leading-snug text-muted-foreground">{suggestion.reason}</p>
         <div className="mt-auto flex gap-2 pt-4">
-          {tryOn.imagePath ? (
+          {ARTIFACT || tryOn.imagePath ? (
             <Button
               size="sm"
               variant={saved ? "soft" : "primary"}

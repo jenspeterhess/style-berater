@@ -6,9 +6,10 @@ import { byStatus, useItems, useProfile } from "@/lib/data";
 import { Spinner, cx } from "@/components/ui";
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
+import { ARTIFACT } from "@/lib/target";
 
 const Welcome = lazy(() => import("@/pages/Welcome"));
-const AvatarSetup = lazy(() => import("@/pages/AvatarSetup"));
+const AvatarSetup = lazy(() => (ARTIFACT ? import("@/pages/AvatarLocal") : import("@/pages/AvatarSetup")));
 const Today = lazy(() => import("@/pages/Today"));
 const Wardrobe = lazy(() => import("@/pages/Wardrobe"));
 const ItemDetail = lazy(() => import("@/pages/ItemDetail"));
@@ -40,7 +41,15 @@ function Protected() {
   const location = useLocation();
   const profile = useProfile(session?.user.id);
   if (session === undefined) return <Loading />;
-  if (!session) return <Navigate to="/anmelden" replace />;
+  if (!session)
+    return ARTIFACT ? (
+      <div className="flex min-h-dvh flex-col justify-center px-8 text-center">
+        <h1 className="text-4xl">Style Berater</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">Bitte öffne diese Seite angemeldet in Claude. Dein Schrank wird privat in deinem Claude-Konto gespeichert.</p>
+      </div>
+    ) : (
+      <Navigate to="/anmelden" replace />
+    );
   if (profile.isPending) return <Loading />;
   // Ohne Einwilligung in die KI-Verarbeitung geht es nicht weiter.
   if (!profile.data?.consent_at && location.pathname !== "/willkommen") return <Navigate to="/willkommen" replace />;
@@ -101,7 +110,7 @@ export default function App() {
   return (
     <Routes>
       <Route element={<Frame />}>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={ARTIFACT ? <Navigate to="/heute" replace /> : <Landing />} />
         <Route path="/anmelden" element={<Auth mode="login" />} />
         <Route path="/registrieren" element={<Auth mode="signup" />} />
         <Route path="/passwort-vergessen" element={<Auth mode="forgot" />} />

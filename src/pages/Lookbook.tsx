@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
 import { BookHeart } from "lucide-react";
-import { useItems, useOutfits } from "@/lib/data";
+import { useItems, useOutfits, useProfile } from "@/lib/data";
+import { useSession } from "@/lib/session";
+import { AvatarLook } from "@/components/AvatarLook";
+import { ARTIFACT } from "@/lib/target";
 import { Collage } from "@/components/LookCard";
 import { Empty, PageHeader, Spinner, StorageImage } from "@/components/ui";
 import type { Item } from "@shared/wardrobe";
@@ -9,6 +12,8 @@ export default function Lookbook() {
   const outfits = useOutfits();
   const items = useItems().data ?? [];
   const count = outfits.data?.length ?? 0;
+  const avatarPath = useProfile(useSession()?.user.id).data?.avatar_path;
+  const partsOf = (ids: string[]) => ids.map((id) => items.find((i) => i.id === id)).filter((i): i is Item => !!i);
   return (
     <div>
       <PageHeader title="Lookbook" subtitle={outfits.data ? (count === 1 ? "1 gespeicherter Look" : `${count} gespeicherte Looks`) : undefined} />
@@ -30,8 +35,10 @@ export default function Lookbook() {
             <Link key={o.id} to={`/lookbook/${o.id}`} className="animate-rise overflow-hidden rounded-(--radius-card) bg-card shadow-soft transition active:scale-[0.985]">
               {o.image_path ? (
                 <StorageImage path={o.image_path} alt={o.title} fit="cover" className="studio-bg aspect-[2/3] w-full" />
+              ) : ARTIFACT ? (
+                <AvatarLook avatarPath={avatarPath} items={partsOf(o.item_ids)} className="aspect-[2/3] w-full" />
               ) : (
-                <Collage items={o.item_ids.map((id) => items.find((i) => i.id === id)).filter((i): i is Item => !!i)} className="aspect-[2/3] w-full" />
+                <Collage items={partsOf(o.item_ids)} className="aspect-[2/3] w-full" />
               )}
               <p className="truncate px-3.5 py-3 text-sm font-semibold">{o.title}</p>
             </Link>

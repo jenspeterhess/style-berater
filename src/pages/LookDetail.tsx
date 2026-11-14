@@ -3,7 +3,10 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { useDeleteOutfit, useItems, useOutfits, useUpdateOutfit } from "@/lib/data";
+import { useDeleteOutfit, useItems, useOutfits, useProfile, useUpdateOutfit } from "@/lib/data";
+import { useSession } from "@/lib/session";
+import { AvatarLook } from "@/components/AvatarLook";
+import { ARTIFACT } from "@/lib/target";
 import { Collage } from "@/components/LookCard";
 import { Button, Confirm, IconButton, ItemImage, Spinner, StorageImage } from "@/components/ui";
 import { formatDate, type Item } from "@shared/wardrobe";
@@ -17,6 +20,7 @@ export default function LookDetail() {
   const update = useUpdateOutfit();
   const remove = useDeleteOutfit();
   const [confirm, setConfirm] = useState(false);
+  const avatarPath = useProfile(useSession()?.user.id).data?.avatar_path;
   const [title, setTitle] = useState("");
   useEffect(() => setTitle(look?.title ?? ""), [look?.title]);
 
@@ -41,7 +45,7 @@ export default function LookDetail() {
   return (
     <div className="pb-[calc(env(safe-area-inset-bottom)+2.5rem)]">
       <div className="relative">
-        {look.image_path ? <StorageImage path={look.image_path} alt={look.title} fit="cover" className="studio-bg aspect-[2/3] w-full" /> : <Collage items={parts} className="aspect-[2/3] w-full" />}
+        {look.image_path ? <StorageImage path={look.image_path} alt={look.title} fit="cover" className="studio-bg aspect-[2/3] w-full" /> : ARTIFACT ? <AvatarLook avatarPath={avatarPath} items={parts} className="mx-auto aspect-[2/3] max-h-[70dvh]" /> : <Collage items={parts} className="aspect-[2/3] w-full" />}
         <div className="absolute inset-x-4 top-[calc(env(safe-area-inset-top)+0.75rem)] flex justify-between">
           <IconButton label="Zurück" onClick={() => navigate("/lookbook")}>
             <ArrowLeft className="size-5" />

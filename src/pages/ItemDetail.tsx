@@ -10,6 +10,7 @@ import { replacePhoto, type Stage } from "@/lib/pipelines";
 import { useSuggest } from "@/lib/suggest";
 import { LookCard } from "@/components/LookCard";
 import { Button, Chip, Confirm, Field, FileInput, IconButton, ItemImage, ModeToggle, ProgressBar, RenderOverlay, Spinner, StorageImage, cx, inputClass, useStoredMode } from "@/components/ui";
+import { ARTIFACT } from "@/lib/target";
 import { CATEGORIES, COLORS, COLOR_SWATCH, SEASONS, STYLES, cap, type Item, type Suggestion } from "@shared/wardrobe";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
@@ -41,7 +42,7 @@ function Outfits({ item, wardrobe }: { item: Item; wardrobe: Item[] }) {
   return (
     <section className="mt-8">
       <h2 className="px-5 text-2xl">Outfits mit diesem Teil</h2>
-      {list && list.length > 0 && (
+      {list && list.length > 0 && !ARTIFACT && (
         <div className="mt-2.5 flex items-center justify-between gap-3 px-5">
           <span className="text-xs text-muted-foreground">Bildqualität am Avatar</span>
           <ModeToggle mode={mode} onChange={setMode} />
@@ -254,13 +255,13 @@ export default function ItemDetail() {
                 <ImagePlus className="size-4" /> Galerie
               </Button>
             </div>
-            {hasPhoto && (
+            {hasPhoto && !ARTIFACT && (
               <Button variant="soft" block busy={beautifying} disabled={!!stage} onClick={beautify}>
                 {!beautifying && <Wand2 className="size-4" />} Als Produktfoto aufhübschen
               </Button>
             )}
             <p className="text-xs leading-relaxed text-muted-foreground">
-              {hasPhoto ? "Aufhübschen erzeugt per KI einen Shop-Look und ersetzt nur das Freistellbild. Dein Originalfoto bleibt erhalten." : "Mit einem eigenen Foto kannst du dieses Teil auch am Avatar anprobieren."}
+              {hasPhoto ? (ARTIFACT ? "Ein neues Foto ersetzt das bisherige. Auf ruhigem, kontrastreichem Untergrund gelingt das Freistellen am besten." : "Aufhübschen erzeugt per KI einen Shop-Look und ersetzt nur das Freistellbild. Dein Originalfoto bleibt erhalten.") : "Mit einem eigenen Foto kannst du dieses Teil auch anprobieren."}
             </p>
           </div>
           <FileInput inputRef={camera} accept="image/*" capture="environment" onFiles={newPhoto} />
