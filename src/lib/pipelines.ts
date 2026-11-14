@@ -60,6 +60,8 @@ type ImportResult = {
   purchase_date: string | null;
   total: number | null;
   currency: string;
+  web_images?: number;
+  web_sources?: number;
   /** `image` (Bild als data-Adresse, Artefakt) oder `image_path` (bereits im Speicher abgelegt, Server). */
   articles: (Classification & { brand: string | null; price: number | null; image?: string | null; image_path?: string | null })[];
 };
@@ -109,5 +111,5 @@ export async function runImport(doc: ParsedDoc, onStage: (s: Stage) => void) {
     if (itemError) await removeImages([original_path, cutout_path]);
     else if (original_path) withImage++;
   }
-  return { importId: record.id as string, count: result.articles.length, withImage, title: result.title };
+  return { importId: record.id as string, count: result.articles.length, withImage, title: result.title, webImages: result.web_images, webSources: result.web_sources };
 }

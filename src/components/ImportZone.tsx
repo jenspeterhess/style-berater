@@ -25,10 +25,12 @@ export function ImportZone({ compact }: { compact?: boolean }) {
     setStage({ label: "Datei wird gelesen" });
     try {
       const doc = await load();
-      const { count, withImage } = await runImport(doc, setStage);
+      const { count, withImage, webImages, webSources } = await runImport(doc, setStage);
+      // Woher die Bilder kamen – damit klar ist, warum Fotos groß oder nur klein sind.
+      const origin = webImages == null || !withImage ? "" : webImages > 0 ? " Große Fotos kamen aus dem Netz." : webSources ? " Die großen Fotos ließen sich nicht aus dem Netz laden; es sind die kleinen Vorschaubilder." : " Das Dokument enthält nur kleine Vorschaubilder. Für große Fotos die E-Mail kopieren und über „Text einfügen“ importieren.";
       await Promise.all([qc.invalidateQueries({ queryKey: ["items"] }), qc.invalidateQueries({ queryKey: ["imports"] })]);
       if (count === 0) toast.message("Gespeichert, aber keine Kleidungsstücke gefunden.", { description: "Der Import liegt im Eingang." });
-      else toast.success(count === 1 ? "1 Teil liegt jetzt im Eingang." : `${count} Teile liegen jetzt im Eingang.`, { description: withImage === count ? "Alle mit Produktbild." : withImage ? `${withImage} davon mit Produktbild.` : "Produktbilder ließen sich nicht übernehmen. Du kannst je Teil ein Foto ergänzen." });
+      else toast.success(count === 1 ? "1 Teil liegt jetzt im Eingang." : `${count} Teile liegen jetzt im Eingang.`, { duration: 9000, description: withImage === count ? `Alle mit Produktbild.${origin}` : withImage ? `${withImage} davon mit Produktbild.${origin}` : "Produktbilder ließen sich nicht übernehmen. Du kannst je Teil ein Foto ergänzen." });
       navigate("/eingang");
     } catch (e) {
       toast.error(errorMessage(e));

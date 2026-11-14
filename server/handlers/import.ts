@@ -67,6 +67,8 @@ export default api(
       add({ mediaType: p.mediaType, data: p.bytes.toString("base64") }, p.bytes.length, `Produktseite${p.title ? ` „${p.title}“` : ""}`);
     }
     for (const img of linked) if (img) add({ mediaType: img.mediaType, data: img.bytes.toString("base64") }, img.bytes.length, "Bild aus der E-Mail");
+    const webImages = candidates.length;
+    console.log(`[import] Links ${body.links.length}, Bildadressen ${body.imageUrls.length}, eingebettet ${body.images.length} → aus dem Netz geladen ${webImages}`);
     for (const url of body.images) {
       const img = parseDataUrl(url);
       add(img, Math.round(img.data.length * 0.75), "kleines Vorschaubild aus dem Dokument");
@@ -126,6 +128,9 @@ export default api(
       total: result.total,
       currency: /^[A-Z]{3}$/.test(result.currency) ? result.currency : "EUR",
       found_images: candidates.length,
+      /** Wie viele Bilder in groß aus dem Netz kamen, und wie viele Adressen dafür im Dokument standen. */
+      web_images: webImages,
+      web_sources: new Set([...body.imageUrls, ...body.links]).size,
       articles,
     };
   },
