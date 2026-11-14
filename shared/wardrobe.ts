@@ -146,5 +146,6 @@ export function formatDate(iso: string | null) {
 export type MissingPiece = { id: string; name: string; category: string; colors: string[]; reason: string };
 export type Advice = { headline: string; advice: string; title: string; item_ids: string[]; missing: MissingPiece[] };
 /** Kauftipps aus der Websuche. Preise gelten zum Zeitpunkt der Suche. */
-export type ShopTip = { shop: string; title: string; price: number | null; currency: string; url: string };
+/** image_path: Produktfoto im eigenen Speicher; image_url: Foto direkt vom Shop, falls es sich nicht speichern ließ. */
+export type ShopTip = { shop: string; title: string; price: number | null; currency: string; url: string; image_path?: string | null; image_url?: string | null };
 export type ShopTips = { status: "done" | "error"; tips: ShopTip[]; searched_at: string; error?: string };
