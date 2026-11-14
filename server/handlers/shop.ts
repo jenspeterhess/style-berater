@@ -47,6 +47,7 @@ async function search(body: z.infer<typeof Body>): Promise<ShopTips["tips"]> {
   // Nur Links, die wirklich in den Suchergebnissen standen – so landet kein erfundener Link in der App.
   const known = new Set([...urls].map(norm));
   const tips = parsed.tips.filter((t) => t.url.startsWith("https://") && known.has(norm(t.url)));
+  if (!tips.length) console.warn("[shop] kein Treffer bestätigt", JSON.stringify({ known: [...known].slice(0, 40), vorgeschlagen: parsed.tips.map((t) => t.url), text: text.slice(-600) }));
   if (!tips.length) throw new HttpError(404, "Dazu habe ich gerade kein passendes Angebot gefunden. Versuche es später noch einmal.");
   return tips;
 }
