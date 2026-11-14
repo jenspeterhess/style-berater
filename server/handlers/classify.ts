@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { api, mock } from "../lib/http";
 import { imageBlock, parseDataUrl, structured } from "../lib/claude";
-import { CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe";
+import { AUDIENCE_IDS, CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe";
 
 export const Classification = z.object({
   name: z.string().describe('Kurzer deutscher Name, z. B. "Cremefarbener Strickpullover"'),
@@ -9,6 +9,7 @@ export const Classification = z.object({
   colors: z.array(z.enum(COLORS)).describe("1 bis 3 Hauptfarben, wichtigste zuerst"),
   style: z.enum(STYLES),
   season: z.enum(SEASONS),
+  audience: z.enum(AUDIENCE_IDS).nullable().describe("Für wen das Teil geschnitten ist, wenn am Foto eindeutig erkennbar; sonst null"),
 });
 
 const Body = z.object({ image: z.string().max(4_000_000) });
@@ -20,7 +21,7 @@ export default api(
     if (mock()) {
       // Ohne KI-Schlüssel: Kategorie und Farbe wechseln je nach Foto, damit sich die App realistisch testen lässt.
       const n = body.image.length;
-      return { name: "Neues Teil", category: CATEGORY_IDS[n % CATEGORY_IDS.length], colors: [COLORS[n % COLORS.length]], style: STYLES[n % STYLES.length], season: "ganzjährig" };
+      return { name: "Neues Teil", category: CATEGORY_IDS[n % CATEGORY_IDS.length], colors: [COLORS[n % COLORS.length]], style: STYLES[n % STYLES.length], season: "ganzjährig", audience: n % 2 ? "damen" : "herren" };
     }
     const result = await structured({
       system:

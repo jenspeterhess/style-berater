@@ -5,10 +5,21 @@ import type { ParsedDoc } from "./mail";
 import { removeImages, uploadImage } from "./storage";
 import { BUCKET, supabase } from "./supabase";
 import { ARTIFACT } from "./target";
-import type { CategoryId, Item } from "@shared/wardrobe";
+import type { AudienceId, CategoryId, Item } from "@shared/wardrobe";
 
 export type Stage = { label: string; progress?: number };
-type Classification = { name: string; category: CategoryId; colors: string[]; style: string; season: string };
+type Classification = { name: string; category: CategoryId; colors: string[]; style: string; season: string; audience?: AudienceId | null };
+
+/**
+ * Teil anlegen. Fehlt in der Datenbank noch die Spalte für die Zielgruppe (Skript noch nicht eingespielt),
+ * wird ohne sie gespeichert, damit Erfassen und Import trotzdem funktionieren.
+ */
+async function insertItem(row: Record<string, unknown>) {
+  const first = await supabase.from("items").insert(row).select().single();
+  if (!first.error || !("audience" in row)) return first;
+  const { audience: _audience, ...rest } = row;
+  return supabase.from("items").insert(rest).select().single();
+}
 
 /** Foto → verkleinern → freistellen → hochladen. Gibt die Speicherpfade zurück. */
 async function storePhoto(photo: Blob, onStage: (s: Stage) => void) {
@@ -32,9 +43,9 @@ export async function captureItem(photo: Blob, onStage: (s: Stage) => void): Pro
       info = await callApi<Classification>("/api/classify", { image: await blobToDataUrl(await resizeImage(original, 768, "image/jpeg", 0.8)) });
     } catch {
       // Erkennung fehlgeschlagen: trotzdem speichern, Angaben lassen sich per Chip setzen.
-      info = { name: "Neues Teil", category: "oberteil", colors: [], style: "casual", season: "ganzjährig" };
+      info = { name: "Neues Teil", category: "oberteil", colors: [], style: "casual", season: "ganzjährig", audience: null };
     }
-    const { data, error } = await supabase.from("items").insert({ ...info, original_path, cutout_path, status: "wardrobe", source: "photo" }).select().single();
+    const { data, error } = await insertItem({ ...info, original_path, cutout_path, status: "wardrobe", source: "photo" });
     if (error || !data) throw new Error("Das Teil konnte nicht gespeichert werden. Bitte versuche es erneut.");
     return data as Item;
   } catch (e) {
@@ -112,7 +123,7 @@ export async function runImport(doc: ParsedDoc, onStage: (s: Stage) => void) {
       }
     }
     const { image: _image, image_path: _path, source: _source, ...fields } = a;
-    const { error: itemError } = await supabase.from("items").insert({
+    const { error: itemError } = await insertItem({
       ...fields, original_path, cutout_path, status: "inbox", source: "import", import_id: record.id,
       store: result.store, currency: result.currency, purchase_date: result.purchase_date,
     });

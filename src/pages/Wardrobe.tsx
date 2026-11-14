@@ -6,7 +6,7 @@ import { errorMessage } from "@/lib/api";
 import { byStatus, useDeleteImport, useDeleteItem, useImports, useItems, useUpdateItem } from "@/lib/data";
 import { ImportZone } from "@/components/ImportZone";
 import { Button, Chip, ChipRow, Confirm, Empty, ItemCard, PageHeader, Sheet, Spinner, cx } from "@/components/ui";
-import { CATEGORIES, COLORS, COLOR_SWATCH, OCCASIONS, cap, formatDate, formatPrice, type ImportRecord, type Item, type ItemStatus } from "@shared/wardrobe";
+import { AUDIENCES, CATEGORIES, COLORS, COLOR_SWATCH, OCCASIONS, cap, formatDate, formatPrice, type ImportRecord, type Item, type ItemStatus } from "@shared/wardrobe";
 
 const TABS = [
   { id: "wardrobe", to: "/schrank", label: "Schrank" },
@@ -20,15 +20,17 @@ function Grid({ items, tab }: { items: Item[]; tab: "wardrobe" | "wishlist" }) {
   const [color, setColor] = useState<string | null>(null);
   const [occasion, setOccasion] = useState<string | null>(null);
   const [more, setMore] = useState(false);
+  const [audience, setAudience] = useState<string | null>(null);
+  const audiences = AUDIENCES.filter((a) => items.some((i) => i.audience === a.id));
 
   const categories = CATEGORIES.filter((c) => items.some((i) => i.category === c.id));
   const colors = COLORS.filter((c) => items.some((i) => i.colors.includes(c)));
   const style = OCCASIONS.find((o) => o.id === occasion)?.style;
   const shown = useMemo(
-    () => items.filter((i) => (!category || i.category === category) && (!color || i.colors.includes(color)) && (!style || i.style === style)),
-    [items, category, color, style],
+    () => items.filter((i) => (!category || i.category === category) && (!color || i.colors.includes(color)) && (!style || i.style === style) && (!audience || i.audience === audience)),
+    [items, category, color, style, audience],
   );
-  const extra = (color ? 1 : 0) + (occasion ? 1 : 0);
+  const extra = (color ? 1 : 0) + (occasion ? 1 : 0) + (audience ? 1 : 0);
 
   if (!items.length)
     return tab === "wardrobe" ? (
@@ -70,6 +72,15 @@ function Grid({ items, tab }: { items: Item[]; tab: "wardrobe" | "wishlist" }) {
         </div>
         {more && (
           <div className="flex animate-rise flex-col gap-2">
+            {audiences.length > 0 && (
+              <ChipRow label="Zielgruppe">
+                {audiences.map((a) => (
+                  <Chip key={a.id} active={audience === a.id} onClick={() => setAudience(audience === a.id ? null : a.id)}>
+                    {a.label}
+                  </Chip>
+                ))}
+              </ChipRow>
+            )}
             <ChipRow label="Anlass">
               {OCCASIONS.map((o) => (
                 <Chip key={o.id} active={occasion === o.id} onClick={() => setOccasion(occasion === o.id ? null : o.id)}>
@@ -98,7 +109,7 @@ function Grid({ items, tab }: { items: Item[]; tab: "wardrobe" | "wishlist" }) {
       ) : (
         <div className="mt-10 px-8 text-center">
           <p className="text-sm text-muted-foreground">Zu dieser Auswahl gibt es kein Teil.</p>
-          <Button size="sm" variant="soft" className="mt-3" onClick={() => (setCategory(null), setColor(null), setOccasion(null))}>
+          <Button size="sm" variant="soft" className="mt-3" onClick={() => (setCategory(null), setColor(null), setOccasion(null), setAudience(null))}>
             Filter zurücksetzen
           </Button>
         </div>
@@ -210,18 +221,54 @@ function InboxGroup({ record, items }: { record: ImportRecord | null; items: Ite
   );
 }
 
-function InboxView({ items }: { items: Item[] }) {
+function InboxView({ items: all }: { items: Item[] }) {
   const imports = useImports().data ?? [];
+  // Zielgruppen-Filter: nur anbieten, wenn im Eingang überhaupt Teile mit erkannter Zielgruppe liegen.
+  const [audience, setAudience] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem("eingang-zielgruppe");
+    } catch {
+      return null;
+    }
+  });
+  const audiences = AUDIENCES.filter((a) => all.some((i) => i.audience === a.id));
+  const active = audiences.some((a) => a.id === audience) ? audience : null;
+  const items = active ? all.filter((i) => i.audience === active) : all;
+  const choose = (id: string | null) => {
+    setAudience(id);
+    try {
+      if (id) localStorage.setItem("eingang-zielgruppe", id);
+      else localStorage.removeItem("eingang-zielgruppe");
+    } catch {
+      /* nur eine Bequemlichkeit */
+    }
+  };
   const loose = items.filter((i) => !i.import_id || !imports.some((r) => r.id === i.import_id));
   // Erledigte Importe (alles einsortiert) verschwinden nach einer Woche aus der Ansicht.
   const groups = imports
     .map((record) => ({ record, items: items.filter((i) => i.import_id === record.id) }))
-    .filter((g) => g.items.length || Date.now() - new Date(g.record.created_at).getTime() < 7 * 86_400_000);
+    // Mit aktivem Filter nur Importe zeigen, die passende Teile enthalten.
+    .filter((g) => g.items.length || (!active && Date.now() - new Date(g.record.created_at).getTime() < 7 * 86_400_000));
   return (
     <div className="flex flex-col gap-7">
       <div className="px-5">
         <ImportZone compact />
       </div>
+      {audiences.length > 0 && (
+        <div className="-mt-3 px-5">
+          <ChipRow label="Zielgruppe">
+            <Chip active={!active} onClick={() => choose(null)}>
+              Alle
+            </Chip>
+            {audiences.map((a) => (
+              <Chip key={a.id} active={active === a.id} onClick={() => choose(active === a.id ? null : a.id)}>
+                {a.label} · {all.filter((i) => i.audience === a.id).length}
+              </Chip>
+            ))}
+          </ChipRow>
+          {active && all.length > items.length && <p className="mt-2 text-xs text-muted-foreground">{all.length - items.length} weitere Teile im Eingang sind ausgeblendet.</p>}
+        </div>
+      )}
       {!groups.length && !loose.length && (
         <Empty icon={Inbox} title="Eingang ist leer" text="Importierte Käufe landen zuerst hier. Dann entscheidest du mit einem Tippen: in den Schrank oder auf die Wunschliste." />
       )}

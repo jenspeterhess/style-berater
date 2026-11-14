@@ -1,7 +1,7 @@
 // Ersatz für die Server-Funktionen: Erkennung, Vorschläge und Import laufen direkt über Claude im Artefakt.
 import { cap, mustDb } from "./claude";
 import { dataUrlToBlob } from "@/lib/images";
-import { CATEGORY_IDS, COLORS, SEASONS, STYLES, categoryLabel, rowOf, type Suggestion } from "@shared/wardrobe";
+import { AUDIENCE_IDS, CATEGORY_IDS, COLORS, SEASONS, STYLES, categoryLabel, rowOf, type AudienceId, type Suggestion } from "@shared/wardrobe";
 
 export const errorMessage = (e: unknown) => (e instanceof Error && e.message ? e.message : "Das hat gerade nicht geklappt. Bitte versuche es erneut.");
 
@@ -36,7 +36,9 @@ const colors = (v: unknown) => [...new Set((Array.isArray(v) ? v : []).filter((c
 const FIELDS = `"category": eine von ${CATEGORY_IDS.join(" | ")} (Schuhe → schuhe; Taschen, Schmuck, Gürtel, Schals, Mützen → accessoire),
 "colors": Liste mit 1 bis 3 Hauptfarben aus ${COLORS.join(" | ")}, wichtigste zuerst,
 "style": eine von ${STYLES.join(" | ")},
-"season": eine von ${SEASONS.join(" | ")}`;
+"season": eine von ${SEASONS.join(" | ")},
+"audience": Zielgruppe, eine von ${AUDIENCE_IDS.join(" | ")}, oder null, wenn nicht eindeutig erkennbar`;
+const audience = (v: unknown): AudienceId | null => (AUDIENCE_IDS.includes(v as AudienceId) ? (v as AudienceId) : null);
 
 async function classify(body: { image: string }) {
   const r = await ask<Record<string, unknown>>(
@@ -47,7 +49,7 @@ ${FIELDS}`,
     [await dataUrlToBlob(body.image)],
     "quick",
   );
-  return { name: str(r.name) ?? "Neues Teil", category: pick(r.category, CATEGORY_IDS, "oberteil"), colors: colors(r.colors), style: pick(r.style, STYLES, "casual"), season: pick(r.season, SEASONS, "ganzjährig") };
+  return { name: str(r.name) ?? "Neues Teil", category: pick(r.category, CATEGORY_IDS, "oberteil"), colors: colors(r.colors), style: pick(r.style, STYLES, "casual"), season: pick(r.season, SEASONS, "ganzjährig"), audience: audience(r.audience) };
 }
 
 type SuggestBody = { items: { id: string; name: string; category: string; colors: string[]; style: string; season: string }[]; anchorId?: string; occasion?: string; count: number; exclude?: string[][] };
@@ -91,7 +93,7 @@ Antworte ausschließlich mit JSON in dieser Form:
   return { suggestions };
 }
 
-type Article = { name: string; category: (typeof CATEGORY_IDS)[number]; colors: string[]; style: string; season: string; brand: string | null; price: number | null; image: string | null };
+type Article = { name: string; category: (typeof CATEGORY_IDS)[number]; colors: string[]; style: string; season: string; audience: AudienceId | null; brand: string | null; price: number | null; image: string | null };
 
 async function importDoc(body: { text: string; images: string[] }) {
   // 1) Kaufangaben und Artikel nur aus dem Text lesen.
@@ -107,7 +109,7 @@ Antworte ausschließlich mit JSON in dieser Form:
 "articles": [{"name": kurzer deutscher Name, ${FIELDS.replace("Liste mit 1 bis 3", "Liste mit 0 bis 3")}, "brand": Marke oder null, "price": Einzelpreis als Zahl oder null}]}`,
   );
   const articles: Article[] = (Array.isArray(r.articles) ? (r.articles as Record<string, unknown>[]) : []).slice(0, 30).map((a) => ({
-    name: str(a.name) ?? "Artikel", category: pick(a.category, CATEGORY_IDS, "oberteil"), colors: colors(a.colors), style: pick(a.style, STYLES, "casual"), season: pick(a.season, SEASONS, "ganzjährig"), brand: str(a.brand), price: num(a.price), image: null,
+    name: str(a.name) ?? "Artikel", category: pick(a.category, CATEGORY_IDS, "oberteil"), colors: colors(a.colors), style: pick(a.style, STYLES, "casual"), season: pick(a.season, SEASONS, "ganzjährig"), audience: audience(a.audience), brand: str(a.brand), price: num(a.price), image: null,
   }));
 
   // 2) Produktbilder zuordnen – in Paketen, weil Claude nur wenige Bilder je Anfrage annimmt.

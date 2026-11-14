@@ -11,7 +11,7 @@ import { useSuggest } from "@/lib/suggest";
 import { LookCard } from "@/components/LookCard";
 import { Button, Chip, Confirm, Field, FileInput, IconButton, ItemImage, ModeToggle, ProgressBar, RenderOverlay, Spinner, StorageImage, cx, inputClass, useStoredMode } from "@/components/ui";
 import { ARTIFACT } from "@/lib/target";
-import { CATEGORIES, COLORS, COLOR_SWATCH, SEASONS, STYLES, cap, type Item, type Suggestion } from "@shared/wardrobe";
+import { AUDIENCES, CATEGORIES, COLORS, COLOR_SWATCH, SEASONS, STYLES, cap, type Item, type Suggestion } from "@shared/wardrobe";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -185,6 +185,15 @@ export default function ItemDetail() {
             {CATEGORIES.map((c) => (
               <Chip key={c.id} active={item.category === c.id} onClick={() => patch({ category: c.id })}>
                 {c.label}
+              </Chip>
+            ))}
+          </div>
+        </Section>
+        <Section title="Für">
+          <div className="flex flex-wrap gap-2">
+            {AUDIENCES.map((a) => (
+              <Chip key={a.id} active={item.audience === a.id} onClick={() => patch({ audience: item.audience === a.id ? null : a.id })}>
+                {a.label}
               </Chip>
             ))}
           </div>

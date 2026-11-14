@@ -15,6 +15,16 @@ export const COLORS = [
   "schwarz", "weiß", "grau", "beige", "braun", "navy", "blau", "grün", "rot", "rosa", "gelb", "orange", "lila", "creme", "denim",
 ] as const;
 
+/** Für wen ein Teil gedacht ist. Bleibt leer, wenn es sich nicht erkennen lässt. */
+export const AUDIENCES = [
+  { id: "damen", label: "Damen" },
+  { id: "herren", label: "Herren" },
+  { id: "kinder", label: "Kinder" },
+  { id: "unisex", label: "Unisex" },
+] as const;
+export type AudienceId = (typeof AUDIENCES)[number]["id"];
+export const AUDIENCE_IDS = AUDIENCES.map((a) => a.id) as [AudienceId, ...AudienceId[]];
+
 /** Anlass ↔ Stil: Der Anlass-Filter im Schrank nutzt den Stil des Teils. */
 export const OCCASIONS = [
   { id: "büro", label: "Büro", style: "business" },
@@ -65,6 +75,7 @@ export type Item = {
   colors: string[];
   style: string;
   season: string;
+  audience?: AudienceId | null;
   original_path: string | null;
   cutout_path: string | null;
   brand: string | null;

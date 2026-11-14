@@ -2,7 +2,7 @@ import { z } from "zod";
 import { admin, api, mock } from "../lib/http";
 import { fetchBest, fetchProductImage, shortUrl } from "../lib/web";
 import { imageBlock, parseDataUrl, structured, type ImageInput } from "../lib/claude";
-import { CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe";
+import { AUDIENCE_IDS, CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe";
 import type Anthropic from "@anthropic-ai/sdk";
 
 const MAX_IMAGES = 20;
@@ -31,6 +31,7 @@ const Extraction = z.object({
       colors: z.array(z.enum(COLORS)).describe("0 bis 3 Farben, nur wenn im Text genannt oder im zugeordneten Bild eindeutig"),
       style: z.enum(STYLES),
       season: z.enum(SEASONS),
+      audience: z.enum(AUDIENCE_IDS).nullable().describe("Zielgruppe des Artikels: aus dem Dokument (z. B. Damen, Herren, Kinder, Mädchen, Jungen), sonst aus Artikelart, Größe oder zugeordnetem Bild, wenn eindeutig; sonst null"),
       brand: z.string().nullable(),
       price: z.number().nullable().describe("Einzelpreis dieses Artikels, sonst null"),
       image_index: z.number().int().nullable().describe("Nummer des Bildes, das genau diesen Artikel zeigt, sonst null"),
@@ -83,7 +84,7 @@ export default api(
       const first = body.text.split("\n").find((l) => l.trim())?.trim().slice(0, 60) ?? "Import";
       result = {
         title: first, store: "Beispiel-Shop", purchase_date: null, total: 89.9, currency: "EUR",
-        articles: [{ name: "Importierter Artikel", category: "oberteil", colors: ["navy"], style: "casual", season: "ganzjährig", brand: "Marke", price: 89.9, image_index: candidates.length ? 1 : null }],
+        articles: [{ name: "Importierter Artikel", category: "oberteil", colors: ["navy"], style: "casual", season: "ganzjährig", audience: "damen", brand: "Marke", price: 89.9, image_index: candidates.length ? 1 : null }],
       };
     } else {
       const content: Anthropic.ContentBlockParam[] = [];
@@ -120,6 +121,7 @@ export default api(
           colors: [...new Set(a.colors)].slice(0, 3),
           style: a.style,
           season: a.season,
+          audience: a.audience,
           brand: a.brand?.trim() || null,
           price: a.price,
           image_path,
