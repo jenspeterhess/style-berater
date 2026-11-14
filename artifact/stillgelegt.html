@@ -1,0 +1,56 @@
+<title>Style Berater</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;1,500&family=Manrope:wght@400;600&display=swap">
+<style>
+  /* Eine ruhige, zentrierte Hinweiskarte im Stil der App: warmes Off-White, ein dunkler Akzent. */
+  :root {
+    --bg: #faf7f2;
+    --card: #fffdf9;
+    --fg: #32241c;
+    --muted: #7a6a5f;
+    --line: #e7dfd4;
+    --serif: "Cormorant Garamond", Georgia, serif;
+    --sans: "Manrope", system-ui, sans-serif;
+  }
+  html, body { height: 100%; }
+  body {
+    background: radial-gradient(ellipse at 50% 30%, var(--card), #f3eee6 75%) var(--bg);
+    color: var(--fg);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.6;
+    display: grid;
+    place-items: center;
+    padding-block: 24px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    box-sizing: border-box;
+  }
+  main { max-width: 26rem; width: 100%; }
+  .eyebrow { font-size: 12px; font-weight: 600; letter-spacing: 0.3em; text-transform: uppercase; color: var(--muted); margin: 0; }
+  h1 { font-family: var(--serif); font-weight: 500; font-size: 2.6rem; line-height: 1; margin: 14px 0 0; text-wrap: balance; }
+  h1 em { color: var(--muted); }
+  p { margin: 18px 0 0; color: var(--muted); }
+  .cta {
+    display: flex; align-items: center; justify-content: center;
+    height: 56px; margin-top: 28px; border-radius: 999px;
+    background: var(--fg); color: var(--bg); font-weight: 600; text-decoration: none;
+    box-shadow: 0 24px 48px -16px rgba(60, 40, 25, 0.35);
+  }
+  .cta:focus-visible { outline: 2px solid var(--fg); outline-offset: 3px; }
+  .url {
+    margin-top: 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 16px;
+    background: var(--card); color: var(--fg); font-size: 14px; text-align: center;
+    user-select: all; overflow-wrap: anywhere;
+  }
+  .note { font-size: 13px; }
+</style>
+<main>
+  <p class="eyebrow">Style Berater</p>
+  <h1>Der Schrank ist <em>umgezogen.</em></h1>
+  <p>Diese Version hier ist stillgelegt. Die App läuft jetzt unter einer eigenen Adresse. Dort lädt der Import die Produktfotos in groß.</p>
+  <a class="cta" href="https://style-berater.netlify.app">Zur neuen App</a>
+  <div class="url">https://style-berater.netlify.app</div>
+  <p class="note">Falls sich der Knopf nicht öffnet: Adresse markieren, kopieren und in einem neuen Browser-Tab einfügen. Teile, die du hier erfasst hattest, sind nicht in die neue App übernommen worden.</p>
+</main>
