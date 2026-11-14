@@ -77,6 +77,13 @@ export function blobToDataUrl(blob: Blob) {
     r.readAsDataURL(blob);
   });
 }
+/** data:-Adresse in eine Datei umwandeln. Bewusst ohne `fetch`: Das ist in eingebetteten Seiten (Artefakt) gesperrt. */
 export async function dataUrlToBlob(url: string) {
-  return (await fetch(url)).blob();
+  const comma = url.indexOf(",");
+  const type = /^data:([^;,]+)/.exec(url)?.[1] ?? "application/octet-stream";
+  if (comma < 0 || !url.slice(0, comma).includes(";base64")) throw new Error("Bild konnte nicht gelesen werden.");
+  const bin = atob(url.slice(comma + 1));
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return new Blob([bytes], { type });
 }
