@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { api, mock } from "../lib/http";
-import { structured } from "../lib/claude";
-import { AUDIENCE_IDS, CATEGORIES, categoryLabel, rowOf } from "../../shared/wardrobe";
+import { api, mock } from "../lib/http.js";
+import { structured } from "../lib/claude.js";
+import { AUDIENCE_IDS, CATEGORIES, categoryLabel, rowOf } from "../../shared/wardrobe.js";
 
 const CATEGORY_IDS = CATEGORIES.map((c) => c.id) as [string, ...string[]];
 

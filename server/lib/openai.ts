@@ -1,5 +1,5 @@
-import { HttpError, env } from "./http";
-import type { Mode } from "../../shared/wardrobe";
+import { HttpError, env } from "./http.js";
+import type { Mode } from "../../shared/wardrobe.js";
 
 const MODEL = () => process.env.OPENAI_IMAGE_MODEL || "gpt-image-1.5";
 

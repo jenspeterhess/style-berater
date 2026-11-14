@@ -1,4 +1,4 @@
-import { HttpError, admin, api } from "../lib/http";
+import { HttpError, admin, api } from "../lib/http.js";
 
 /** Löscht alle Bilder, alle Daten und das Konto selbst. Tabellenzeilen fallen über ON DELETE CASCADE mit dem Konto weg. */
 export default api(

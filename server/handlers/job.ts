@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { HttpError, admin, json, mock, requireUser } from "../lib/http";
-import { editImages } from "../lib/openai";
-import { categoryLabel, comboKey, rowOf, type Mode } from "../../shared/wardrobe";
+import { HttpError, admin, json, mock, requireUser } from "../lib/http.js";
+import { editImages } from "../lib/openai.js";
+import { categoryLabel, comboKey, rowOf, type Mode } from "../../shared/wardrobe.js";
 
 const BUCKET = "wardrobe";
 const AVATAR_BASICS = "a plain fitted light grey t-shirt, plain short light grey shorts, and simple white sneakers";

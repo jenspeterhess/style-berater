@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { HttpError, admin, json, mock, requireUser } from "../lib/http";
-import { searchWeb } from "../lib/claude";
-import { fetchProductImage, type WebImage } from "../lib/web";
-import { AUDIENCE_IDS, type ShopTips } from "../../shared/wardrobe";
+import { HttpError, admin, json, mock, requireUser } from "../lib/http.js";
+import { searchWeb } from "../lib/claude.js";
+import { fetchProductImage, type WebImage } from "../lib/web.js";
+import { AUDIENCE_IDS, type ShopTips } from "../../shared/wardrobe.js";
 
 const Body = z.object({
   id: z.string().uuid(),

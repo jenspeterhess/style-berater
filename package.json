@@ -14,6 +14,7 @@
     "@imgly/background-removal": "^1.7.0",
     "@supabase/supabase-js": "^2.119.0",
     "@tanstack/react-query": "^5.107.1",
+    "@vercel/functions": "^3.11.3",
     "lucide-react": "^1.72.0",
     "pdfjs-dist": "^6.5.438",
     "postal-mime": "^4.2.1",
@@ -35,5 +36,8 @@
     "typescript": "^7.0.2",
     "vite": "^8.3.8",
     "vitest": "^5.1.0"
+  },
+  "engines": {
+    "node": "22.x"
   }
 }

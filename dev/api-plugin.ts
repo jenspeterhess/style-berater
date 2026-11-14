@@ -6,10 +6,10 @@ const ROUTES: Record<string, string> = {
   "/api/classify": "/server/handlers/classify.ts",
   "/api/suggest": "/server/handlers/suggest.ts",
   "/api/expert": "/server/handlers/expert.ts",
-  "/.netlify/functions/shop-background": "/server/handlers/shop.ts",
+  "/api/shop-background": "/server/handlers/shop.ts",
   "/api/import": "/server/handlers/import.ts",
   "/api/delete-account": "/server/handlers/delete-account.ts",
-  "/.netlify/functions/job-background": "/server/handlers/job.ts",
+  "/api/job-background": "/server/handlers/job.ts",
 };
 
 function readBody(req: IncomingMessage) {

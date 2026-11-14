@@ -36,7 +36,7 @@ export function runJob(key: string, kind: JobKind, input: Record<string, unknown
   const promise = (async () => {
     const { data, error } = await supabase.from("jobs").insert({ kind, input }).select("id").single();
     if (error || !data) throw new Error("Der Auftrag konnte nicht gestartet werden. Bitte versuche es erneut.");
-    await callApi("/.netlify/functions/job-background", { jobId: data.id });
+    await callApi("/api/job-background", { jobId: data.id });
     return poll(data.id as string);
   })().finally(() => {
     inflight.delete(key);

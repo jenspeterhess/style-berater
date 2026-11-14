@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { api, mock, HttpError } from "../lib/http";
-import { structured } from "../lib/claude";
-import { categoryLabel, rowOf, type Suggestion } from "../../shared/wardrobe";
+import { api, mock, HttpError } from "../lib/http.js";
+import { structured } from "../lib/claude.js";
+import { categoryLabel, rowOf, type Suggestion } from "../../shared/wardrobe.js";
 
 const Body = z.object({
   items: z

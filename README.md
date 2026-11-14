@@ -49,3 +49,13 @@ Mit `AI_MOCK=1` in `.env` werden alle KI-Aufrufe simuliert. So lässt sich die A
 
 Optional: `CLAUDE_MODEL` (Standard `claude-opus-5-5`), `OPENAI_IMAGE_MODEL` (Standard `gpt-image-1.5`),
 `OPENAI_IMAGE_MODEL_FAST` (eigenes Modell für „Schnell“; sonst dasselbe Modell mit niedriger Qualitätsstufe).
+
+## Betrieb bei Vercel
+
+Die App läuft auch bei Vercel. `vercel.json` legt Build, Ausgabeordner und die Höchstlaufzeit der Funktionen fest;
+die Einstiegspunkte liegen in `api/` und rufen dieselben Handler aus `server/handlers/` auf wie die Netlify-Funktionen.
+Lang laufende Aufträge (`api/job-background.ts`, `api/shop-background.ts`) antworten sofort mit 202 und arbeiten über `waitUntil` weiter.
+
+Nötige Umgebungsvariablen (Production und Preview): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`,
+`SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, optional `OPENAI_API_KEY`.
+Bei Supabase muss die Vercel-Adresse unter Authentication → URL Configuration eingetragen sein.

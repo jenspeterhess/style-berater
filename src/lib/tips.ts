@@ -36,7 +36,7 @@ export function useSearchTips() {
     mutationFn: async (q: TipQuery) => {
       // Altes Ergebnis entfernen, damit beim Warten nur das neue zählt.
       await supabase.storage.from(BUCKET).remove([await pathOf(q.id)]);
-      await callApi("/.netlify/functions/shop-background", q);
+      await callApi("/api/shop-background", q);
       const started = Date.now();
       while (Date.now() - started < 3 * 60_000) {
         await wait(2500);

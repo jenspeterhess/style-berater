@@ -1,8 +1,8 @@
 import { z } from "zod";
-import { admin, api, mock } from "../lib/http";
-import { fetchBest, fetchProductImage, shortUrl } from "../lib/web";
-import { imageBlock, parseDataUrl, structured, type ImageInput } from "../lib/claude";
-import { AUDIENCE_IDS, CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe";
+import { admin, api, mock } from "../lib/http.js";
+import { fetchBest, fetchProductImage, shortUrl } from "../lib/web.js";
+import { imageBlock, parseDataUrl, structured, type ImageInput } from "../lib/claude.js";
+import { AUDIENCE_IDS, CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe.js";
 import type Anthropic from "@anthropic-ai/sdk";
 
 const MAX_IMAGES = 20;

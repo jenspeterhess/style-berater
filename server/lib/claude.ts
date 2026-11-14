@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 import type { z } from "zod";
-import { HttpError, env } from "./http";
+import { HttpError, env } from "./http.js";
 
 let client: Anthropic | undefined;
 const MODEL = () => process.env.CLAUDE_MODEL || "claude-opus-5-5";

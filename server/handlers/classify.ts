@@ -1,7 +1,7 @@
 import { z } from "zod";
-import { api, mock } from "../lib/http";
-import { imageBlock, parseDataUrl, structured } from "../lib/claude";
-import { AUDIENCE_IDS, CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe";
+import { api, mock } from "../lib/http.js";
+import { imageBlock, parseDataUrl, structured } from "../lib/claude.js";
+import { AUDIENCE_IDS, CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe.js";
 
 export const Classification = z.object({
   name: z.string().describe('Kurzer deutscher Name, z. B. "Cremefarbener Strickpullover"'),

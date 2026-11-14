@@ -6,6 +6,17 @@
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# Lang laufende Aufträge liegen bei Netlify als Background Functions vor.
+[[redirects]]
+  from = "/api/job-background"
+  to = "/.netlify/functions/job-background"
+  status = 200
+
+[[redirects]]
+  from = "/api/shop-background"
+  to = "/.netlify/functions/shop-background"
+  status = 200
+
 [[redirects]]
   from = "/*"
   to = "/index.html"
