@@ -4,7 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ClipboardPaste, FileUp, MailOpen } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { ACCEPTED_IMPORT, parseImportFile, parseImportText } from "@/lib/mail";
+import { ACCEPTED_IMPORT, parseImportFile, parseImportPaste, parseImportText } from "@/lib/mail";
+import { ARTIFACT } from "@/lib/target";
 import { runImport, type Stage } from "@/lib/pipelines";
 import { Button, FileInput, ProgressBar, Sheet, cx } from "./ui";
 
@@ -17,6 +18,8 @@ export function ImportZone({ compact }: { compact?: boolean }) {
   const [stage, setStage] = useState<Stage | null>(null);
   const [paste, setPaste] = useState(false);
   const [text, setText] = useState("");
+  // HTML der zuletzt eingefügten E-Mail: enthält die Adressen der Produktbilder.
+  const [pasted, setPasted] = useState<{ html: string; images: number } | null>(null);
 
   async function run(load: () => ReturnType<typeof parseImportFile>) {
     setStage({ label: "Datei wird gelesen" });
@@ -90,21 +93,33 @@ export function ImportZone({ compact }: { compact?: boolean }) {
       <Sheet open={paste} onClose={() => setPaste(false)} title="E-Mail-Text einfügen">
         <textarea
           value={text}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => (setText(e.target.value), !e.target.value && setPasted(null))}
+          onPaste={(e) => {
+            const html = e.clipboardData.getData("text/html");
+            setPasted(html ? { html, images: (html.match(/<img\b/gi) ?? []).length } : null);
+          }}
           rows={9}
           autoFocus
           placeholder="Text der Bestellbestätigung hier einfügen …"
           className="w-full resize-none rounded-2xl border border-border bg-background p-4 text-[15px] leading-relaxed focus:border-primary focus:outline-none"
         />
+        <p className="mt-2.5 text-xs leading-relaxed text-muted-foreground">
+          {pasted?.images && !ARTIFACT
+            ? `${pasted.images} Bilder in der E-Mail erkannt. Die Produktfotos werden in groß nachgeladen.`
+            : ARTIFACT
+              ? "Tipp: In der E-Mail alles markieren, kopieren und hier einfügen."
+              : "Tipp: In der E-Mail alles markieren, kopieren und hier einfügen. So kommen auch die großen Produktfotos mit."}
+        </p>
         <Button
           block
-          className="mt-4"
+          className="mt-3"
           disabled={!text.trim()}
           onClick={() => {
-            const value = text;
+            const value = text, html = pasted?.html ?? null;
             setPaste(false);
             setText("");
-            void run(async () => parseImportText(value));
+            setPasted(null);
+            void run(async () => parseImportPaste(value, html));
           }}
         >
           Importieren

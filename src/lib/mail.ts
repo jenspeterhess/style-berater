@@ -1,7 +1,7 @@
 import { resizeImage, toBitmap } from "./images";
 import { ARTIFACT } from "./target";
 
-export type ParsedDoc = { text: string; images: Blob[]; imageUrls: string[] };
+export type ParsedDoc = { text: string; images: Blob[]; imageUrls: string[]; links: string[] };
 
 const MAX_TEXT = 60_000;
 // Im Artefakt werden Bilder in mehreren Durchgängen zugeordnet, deshalb dürfen es dort mehr sein.
@@ -10,11 +10,19 @@ const MAX_IMAGES = ARTIFACT ? 20 : 8;
 const MIN_SIDE = 80;
 const NOT_PRODUCT = /logo|icon|pixel|track|spacer|banner|facebook|instagram|twitter|pinterest|youtube|tiktok|badge|rating|star|open\.|beacon|footer|header|app-?store|google-?play/i;
 
-function finish(text: string, images: Blob[] = [], imageUrls: string[] = []): ParsedDoc {
+const NOT_PRODUCT_LINK = /unsubscribe|abmelden|abbestellen|impressum|datenschutz|privacy|agb|terms|kontakt|hilfe|help|facebook\.|instagram\.|twitter\.|x\.com|pinterest\.|youtube\.|tiktok\.|apps\.apple|play\.google|mailto:/i;
+/** Links, hinter denen eine Produktseite stecken könnte – ohne Doppelte und ohne Abmelde-, Rechts- und Social-Media-Links. */
+function productLinks(urls: (string | null | undefined)[]) {
+  const out: string[] = [];
+  for (const u of urls) if (u && u.startsWith("https://") && u.length < 2000 && !NOT_PRODUCT_LINK.test(u) && !out.includes(u)) out.push(u);
+  return out.slice(0, 30);
+}
+
+function finish(text: string, images: Blob[] = [], imageUrls: string[] = [], links: string[] = []): ParsedDoc {
   const clean = text.replace(/\r/g, "").replace(/[ \t]+\n/g, "\n").replace(/\n{3,}/g, "\n\n").trim();
   if (!clean) throw new Error("In dieser Datei wurde kein Text gefunden.");
   if (clean.length > MAX_TEXT) throw new Error("Dieser Text ist zu lang. Bitte füge nur die Bestellübersicht ein.");
-  return { text: clean, images, imageUrls };
+  return { text: clean, images, imageUrls, links };
 }
 
 /** HTML nur als Daten lesen: Es wird nichts dargestellt und nichts nachgeladen. */
@@ -29,10 +37,12 @@ function readHtml(html: string) {
     if ((w && w < 60) || (h && h < 60)) return;
     if (!urls.includes(src)) urls.push(src);
   });
+  // Links um Bilder herum führen meist zur Produktseite – die zuerst.
+  const links = productLinks([...[...doc.querySelectorAll("a[href]")].filter((a) => a.querySelector("img")), ...doc.querySelectorAll("a[href]")].map((a) => a.getAttribute("href")));
   doc.querySelectorAll("br").forEach((n) => n.replaceWith("\n"));
   doc.querySelectorAll("p,div,tr,li,h1,h2,h3,h4,table").forEach((n) => n.append("\n"));
   doc.querySelectorAll("td,th").forEach((n) => n.append(" "));
-  return { text: doc.body?.textContent ?? "", urls: urls.slice(0, 12) };
+  return { text: doc.body?.textContent ?? "", urls: urls.slice(0, 30), links };
 }
 
 /** Bilder auf Produktbild-Größe prüfen und verkleinern. Zu kleine oder unlesbare Bilder fallen weg. */
@@ -61,7 +71,7 @@ async function parseEml(file: File): Promise<ParsedDoc> {
   const attached = (mail.attachments ?? [])
     .filter((a) => /^image\/(jpeg|png|webp)$/.test(a.mimeType) && typeof a.content !== "string" && a.content.byteLength > 8000)
     .map((a) => new Blob([a.content as ArrayBuffer], { type: a.mimeType }));
-  return finish(`${head}\n\n${body}`, await usable(attached), html?.urls ?? []);
+  return finish(`${head}\n\n${body}`, await usable(attached), html?.urls ?? [], html?.links ?? []);
 }
 
 async function parsePdf(file: File): Promise<ParsedDoc> {
@@ -79,19 +89,22 @@ async function parsePdf(file: File): Promise<ParsedDoc> {
   }
   let text = "";
   const images: Blob[] = [];
+  const links: string[] = [];
   try {
     for (let n = 1; n <= Math.min(pdf.numPages, 12); n++) {
       const page = await pdf.getPage(n);
       const content = await page.getTextContent();
       for (const item of content.items) if ("str" in item) text += item.str + (item.hasEOL ? "\n" : " ");
       text += "\n\n";
+      // Anklickbare Links der Seite (in gedruckten E-Mails führen sie zu den Produktseiten).
+      for (const a of await page.getAnnotations().catch(() => [])) if (a.subtype === "Link" && typeof a.url === "string") links.push(a.url);
       if (n <= 8 && images.length < 60) images.push(...(await pdfPageImages(pdfjs, page)));
     }
   } finally {
     void task.destroy();
   }
   if (!text.trim()) throw new Error("In dieser PDF wurde kein Text gefunden. Gescannte Dokumente können nicht gelesen werden.");
-  return finish(text, await usable(images));
+  return finish(text, await usable(images), [], productLinks(links));
 }
 
 type PdfImage = { bitmap?: ImageBitmap; data?: Uint8ClampedArray | Uint8Array; width: number; height: number };
@@ -155,3 +168,13 @@ export async function parseImportFile(file: File): Promise<ParsedDoc> {
 }
 
 export const parseImportText = (text: string) => finish(text);
+
+/**
+ * Aus einer E-Mail kopierter Inhalt: Der Zwischenablage liegt neben dem Text auch das HTML bei.
+ * Daraus kommen die Adressen der Produktbilder und die Produkt-Links – der sichtbare Text bleibt maßgeblich.
+ */
+export function parseImportPaste(text: string, html: string | null) {
+  if (!html) return finish(text);
+  const parsed = readHtml(html);
+  return finish(text.trim() ? text : parsed.text, [], parsed.urls, parsed.links);
+}

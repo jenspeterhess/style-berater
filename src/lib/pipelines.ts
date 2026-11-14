@@ -3,7 +3,7 @@ import { cutout } from "./cutout";
 import { blobToDataUrl, dataUrlToBlob, resizeImage } from "./images";
 import type { ParsedDoc } from "./mail";
 import { removeImages, uploadImage } from "./storage";
-import { supabase } from "./supabase";
+import { BUCKET, supabase } from "./supabase";
 import { ARTIFACT } from "./target";
 import type { CategoryId, Item } from "@shared/wardrobe";
 
@@ -60,7 +60,8 @@ type ImportResult = {
   purchase_date: string | null;
   total: number | null;
   currency: string;
-  articles: (Classification & { brand: string | null; price: number | null; image: string | null })[];
+  /** `image` (Bild als data-Adresse, Artefakt) oder `image_path` (bereits im Speicher abgelegt, Server). */
+  articles: (Classification & { brand: string | null; price: number | null; image?: string | null; image_path?: string | null })[];
 };
 
 /**
@@ -69,12 +70,12 @@ type ImportResult = {
  */
 export async function runImport(doc: ParsedDoc, onStage: (s: Stage) => void) {
   onStage({ label: "Kaufangaben werden gelesen" });
-  const images = await Promise.all(doc.images.map(blobToDataUrl));
-  const result = await callApi<ImportResult>("/api/import", { text: doc.text, images, imageUrls: doc.imageUrls });
+  const images = await Promise.all(doc.images.slice(0, ARTIFACT ? 20 : 8).map(blobToDataUrl));
+  const result = await callApi<ImportResult>("/api/import", { text: doc.text, images, imageUrls: doc.imageUrls, links: doc.links });
 
   const { data: record, error } = await supabase
     .from("imports")
-    .insert({ title: result.title, content: doc.text, store: result.store, purchase_date: result.purchase_date, total: result.total, currency: result.currency, ...(ARTIFACT ? { found_images: doc.images.length, matched_images: result.articles.filter((a) => a.image).length } : {}) })
+    .insert({ title: result.title, content: doc.text, store: result.store, purchase_date: result.purchase_date, total: result.total, currency: result.currency, ...(ARTIFACT ? { found_images: doc.images.length, matched_images: result.articles.filter((a) => a.image ?? a.image_path).length } : {}) })
     .select("id")
     .single();
   if (error || !record) throw new Error("Der Import konnte nicht gespeichert werden. Bitte versuche es erneut.");
@@ -83,17 +84,24 @@ export async function runImport(doc: ParsedDoc, onStage: (s: Stage) => void) {
   for (const a of result.articles) {
     n++;
     let original_path: string | null = null, cutout_path: string | null = null;
-    if (a.image) {
+    if (a.image || a.image_path) {
       try {
         onStage({ label: `Produktbild ${n} von ${result.articles.length} wird freigestellt` });
-        const original = await resizeImage(await dataUrlToBlob(a.image), 1600);
+        let source: Blob;
+        if (a.image_path) {
+          const { data } = await supabase.storage.from(BUCKET).download(a.image_path);
+          if (!data) throw new Error("Bild fehlt");
+          source = data;
+        } else source = await dataUrlToBlob(a.image!);
+        const original = await resizeImage(source, 1600);
         const cut = await cutout(original, (p, phase) => onStage({ label: phase === "laden" ? "Freisteller wird geladen (nur beim ersten Mal)" : `Produktbild ${n} von ${result.articles.length} wird freigestellt`, progress: p }));
-        [original_path, cutout_path] = await Promise.all([uploadImage(original, "original"), cut ? uploadImage(cut, "cutout") : Promise.resolve(null)]);
+        [original_path, cutout_path] = await Promise.all([a.image_path ? Promise.resolve(a.image_path) : uploadImage(original, "original"), cut ? uploadImage(cut, "cutout") : Promise.resolve(null)]);
       } catch {
-        /* ohne Bild weiter */
+        // Freistellen gescheitert: das abgelegte Bild trotzdem verwenden.
+        original_path ??= a.image_path ?? null;
       }
     }
-    const { image: _image, ...fields } = a;
+    const { image: _image, image_path: _path, ...fields } = a;
     const { error: itemError } = await supabase.from("items").insert({
       ...fields, original_path, cutout_path, status: "inbox", source: "import", import_id: record.id,
       store: result.store, currency: result.currency, purchase_date: result.purchase_date,
