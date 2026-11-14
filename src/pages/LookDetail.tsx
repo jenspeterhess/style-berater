@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { ArrowLeft, Sparkles, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
 import { useDeleteOutfit, useItems, useOutfits, useUpdateOutfit } from "@/lib/data";
@@ -9,7 +9,7 @@ import { AvatarLook } from "@/components/AvatarLook";
 import { ARTIFACT } from "@/lib/target";
 import { Collage } from "@/components/LookCard";
 import { Button, Confirm, IconButton, ItemImage, Spinner, StorageImage } from "@/components/ui";
-import { formatDate, type Item } from "@shared/wardrobe";
+import { OCCASIONS, formatDate, type Item } from "@shared/wardrobe";
 
 export default function LookDetail() {
   const { id } = useParams();
@@ -42,6 +42,8 @@ export default function LookDetail() {
 
   const parts = look.item_ids.map((i) => items.find((x) => x.id === i)).filter((i): i is Item => !!i);
   const missing = look.item_ids.length - parts.length;
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const wornToday = look.last_worn === todayIso;
   return (
     <div className="pb-[calc(env(safe-area-inset-bottom)+2.5rem)]">
       <div className="relative">
@@ -65,7 +67,9 @@ export default function LookDetail() {
           className="w-full bg-transparent font-serif text-[2rem] leading-tight focus:outline-none"
         />
         {look.reason && <p className="mt-1.5 text-[15px] leading-relaxed text-muted-foreground">{look.reason}</p>}
-        <p className="mt-2 text-xs text-muted-foreground">Gespeichert am {formatDate(look.created_at)}</p>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {[OCCASIONS.find((o) => o.id === look.occasion)?.label, `gespeichert am ${formatDate(look.created_at)}`, look.last_worn ? (wornToday ? "heute getragen" : `zuletzt getragen am ${formatDate(look.last_worn)}`) : null].filter(Boolean).join(" · ")}
+        </p>
 
         <h2 className="mt-7 mb-2.5 font-sans text-xs font-semibold tracking-wide text-muted-foreground uppercase">Teile in diesem Look</h2>
         <ul className="flex flex-col gap-2.5">
@@ -81,9 +85,15 @@ export default function LookDetail() {
         {missing > 0 && <p className="mt-2.5 text-xs text-muted-foreground">{missing === 1 ? "1 Teil dieses Looks ist nicht mehr im Schrank." : `${missing} Teile dieses Looks sind nicht mehr im Schrank.`}</p>}
 
         {parts.length > 0 && (
-          <Link to={`/anprobe?teile=${parts.map((i) => i.id).join(",")}`} className="mt-6 flex h-13 items-center justify-center gap-2 rounded-full bg-primary font-semibold text-primary-foreground shadow-soft">
-            <Sparkles className="size-4" /> In der Anprobe öffnen
-          </Link>
+          <div className="mt-6 flex gap-2.5">
+            <Link to={`/anprobe?teile=${parts.map((i) => i.id).join(",")}`} className="flex h-13 min-w-0 flex-1 items-center justify-center gap-2 rounded-full bg-primary font-semibold text-primary-foreground">
+              <Sparkles className="size-4" /> In der Anprobe ändern
+            </Link>
+            <Button variant="soft" disabled={wornToday} onClick={() => update.mutate({ id: look.id, patch: { last_worn: todayIso } }, { onSuccess: () => toast.success("Für heute gemerkt"), onError: (e) => toast.error(errorMessage(e)) })}>
+              {wornToday ? <Check className="size-4 text-accent" /> : null}
+              {wornToday ? "Heute getragen" : "Heute tragen"}
+            </Button>
+          </div>
         )}
       </div>
       <Confirm

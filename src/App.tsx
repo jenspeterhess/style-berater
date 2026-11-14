@@ -18,6 +18,7 @@ const Capture = lazy(() => import("@/pages/Capture"));
 const TryOn = lazy(() => import("@/pages/TryOn"));
 const Lookbook = lazy(() => import("@/pages/Lookbook"));
 const LookDetail = lazy(() => import("@/pages/LookDetail"));
+const Expert = lazy(() => import("@/pages/Expert"));
 const Settings = lazy(() => import("@/pages/Settings"));
 
 const Loading = () => (
@@ -132,6 +133,7 @@ export default function App() {
           <Route path="/teil/:id" element={<ItemDetail />} />
           <Route path="/lookbook/:id" element={<LookDetail />} />
           <Route path="/einstellungen" element={<Settings />} />
+          <Route path="/experte" element={<Expert />} />
           <Route element={<WithNav />}>
             <Route path="/heute" element={<Today />} />
             <Route path="/schrank" element={<Wardrobe tab="wardrobe" />} />

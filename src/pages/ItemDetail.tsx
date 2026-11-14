@@ -5,7 +5,8 @@ import { ArrowLeft, Camera, Heart, ImagePlus, Shirt, Sparkles, Trash2, Wand2 } f
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
 import { ofPerson, useDeleteItem, useDeleteOutfit, useItems, useOutfits, useUpdateItem } from "@/lib/data";
-import { useActivePerson } from "@/lib/people";
+import { ageOf, useActivePerson } from "@/lib/people";
+import { BuyTips } from "@/components/BuyTips";
 import { runJob, useJobRunning } from "@/lib/jobs";
 import { replacePhoto, type Stage } from "@/lib/pipelines";
 import { useSuggest } from "@/lib/suggest";
@@ -109,6 +110,7 @@ export default function ItemDetail() {
       </div>
     );
 
+  const owner = people.find((p) => p.id === item.person_id) ?? null;
   const patch = (p: Partial<Item>) => update.mutate({ id: item.id, patch: p }, { onError: (e) => toast.error(errorMessage(e)) });
   const hasPhoto = !!(item.cutout_path ?? item.original_path);
   const back = () => (history.length > 1 ? navigate(-1) : navigate("/schrank"));
@@ -209,6 +211,12 @@ export default function ItemDetail() {
             ))}
           </div>
         </Section>
+        {item.status === "wishlist" && (
+          <Section title="Kaufen">
+            {item.note && <p className="mb-3 text-sm leading-relaxed text-muted-foreground">{item.note}</p>}
+            <BuyTips query={{ id: item.id, name: item.name, colors: item.colors.slice(0, 2), note: item.note ?? undefined, audience: item.audience, age: owner ? ageOf(owner) : null }} />
+          </Section>
+        )}
         {item.status !== "inbox" && people.length > 1 && (
           <Section title="Schrank von">
             <div className="flex flex-wrap gap-2">

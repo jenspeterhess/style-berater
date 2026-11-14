@@ -141,3 +141,10 @@ export function formatDate(iso: string | null) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? null : d.toLocaleDateString("de-DE", { day: "numeric", month: "long", year: "numeric" });
 }
+
+/** Ein fehlendes Teil, das der Styling-Experte zum Kauf empfiehlt. */
+export type MissingPiece = { id: string; name: string; category: string; colors: string[]; reason: string };
+export type Advice = { headline: string; advice: string; title: string; item_ids: string[]; missing: MissingPiece[] };
+/** Kauftipps aus der Websuche. Preise gelten zum Zeitpunkt der Suche. */
+export type ShopTip = { shop: string; title: string; price: number | null; currency: string; url: string };
+export type ShopTips = { status: "done" | "error"; tips: ShopTip[]; searched_at: string; error?: string };
