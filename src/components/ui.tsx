@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { Footprints, Gem, Loader2, Shirt, X, type LucideIcon } from "lucide-react";
 import { useImageUrl } from "@/lib/storage";
 import { imagePath } from "@/lib/data";
-import { COLOR_SWATCH, MODES, cap, categoryLabel, type Item, type Mode } from "@shared/wardrobe";
+import { COLOR_SWATCH, MODES, cap, categoryLabel, formatPrice, type Item, type Mode } from "@shared/wardrobe";
 
 export const cx = (...parts: (string | false | null | undefined)[]) => parts.filter(Boolean).join(" ");
 
@@ -141,7 +141,7 @@ export function ItemCard({ item, onClick, footer, selected }: { item: Item; onCl
         <ItemImage item={item} className="aspect-[4/5] w-full" />
         <div className="px-3.5 pt-3 pb-3.5">
           <p className="truncate text-sm font-semibold">{item.name}</p>
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">{[item.brand, categoryLabel(item.category)].filter(Boolean).join(" · ")}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{[categoryLabel(item.category), item.status === "wardrobe" ? null : formatPrice(item.price, item.currency)].filter(Boolean).join(" · ")}</p>
         </div>
       </button>
       {footer}

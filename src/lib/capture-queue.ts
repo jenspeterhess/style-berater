@@ -5,7 +5,7 @@ import { errorMessage } from "./api";
 import { captureItem, type Stage } from "./pipelines";
 import type { Item } from "@shared/wardrobe";
 
-export type Entry = { id: string; file: File; preview: string; stage: Stage; item?: Item; error?: string };
+export type Entry = { id: string; file: File; preview: string; stage: Stage; personId: string | null; item?: Item; error?: string };
 
 // Die Warteschlange lebt außerhalb der Seite: Fotos werden weiterverarbeitet, auch wenn man kurz woanders hinschaut.
 let entries: Entry[] = [];
@@ -25,7 +25,7 @@ async function work(qc: QueryClient) {
       const next = entries.find((e) => !e.item && !e.error);
       if (!next) break;
       try {
-        const item = await captureItem(next.file, (stage) => update(next.id, { stage }));
+        const item = await captureItem(next.file, (stage) => update(next.id, { stage }), next.personId);
         qc.setQueryData<Item[]>(["items"], (old) => (old ? [item, ...old] : old));
         update(next.id, { item });
       } catch (e) {
@@ -38,9 +38,10 @@ async function work(qc: QueryClient) {
   }
 }
 
-export function enqueue(files: File[], qc: QueryClient) {
+/** Fotos einreihen. Sie landen im Schrank der Person, die beim Auswählen aktiv war. */
+export function enqueue(files: File[], qc: QueryClient, personId: string | null) {
   const images = files.filter((f) => f.type.startsWith("image/") || /\.(jpe?g|png|webp|heic|heif)$/i.test(f.name));
-  entries = [...images.map((file) => ({ id: uuid(), file, preview: URL.createObjectURL(file), stage: { label: "Wartet" } })), ...entries];
+  entries = [...images.map((file) => ({ id: uuid(), file, preview: URL.createObjectURL(file), stage: { label: "Wartet" }, personId })), ...entries];
   emit();
   void work(qc);
   return images.length;

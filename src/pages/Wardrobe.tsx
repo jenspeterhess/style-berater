@@ -3,8 +3,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { Heart, Inbox, Shirt, SlidersHorizontal, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { byStatus, useDeleteImport, useDeleteItem, useImports, useItems, useUpdateItem } from "@/lib/data";
+import { ofPerson, useDeleteImport, useDeleteItem, useImports, useItems, useUpdateItem } from "@/lib/data";
 import { ImportZone } from "@/components/ImportZone";
+import { suggestOwner, useActivePerson, type Person } from "@/lib/people";
 import { Button, Chip, ChipRow, Confirm, Empty, ItemCard, PageHeader, Sheet, Spinner, cx } from "@/components/ui";
 import { AUDIENCES, CATEGORIES, COLORS, COLOR_SWATCH, OCCASIONS, cap, formatDate, formatPrice, type ImportRecord, type Item, type ItemStatus } from "@shared/wardrobe";
 
@@ -132,13 +133,18 @@ function InboxGroup({ record, items }: { record: ImportRecord | null; items: Ite
       return null;
     }
   }, [record]);
+  const { people, active } = useActivePerson();
   const meta = record ? [record.store, formatDate(record.purchase_date), formatPrice(record.total, record.currency)].filter(Boolean).join(" · ") : "";
 
-  function move(item: Item, status: ItemStatus) {
+  // Der Eingang ist gemeinsam: Erst beim Einsortieren entscheidet sich, in wessen Schrank ein Teil kommt.
+  function move(item: Item, status: ItemStatus, person: Person | null) {
     update.mutate(
-      { id: item.id, patch: { status } },
+      { id: item.id, patch: { status, person_id: person?.id ?? null } },
       {
-        onSuccess: () => toast.success(status === "wardrobe" ? "Im Schrank" : "Auf der Wunschliste", { action: { label: "Rückgängig", onClick: () => update.mutate({ id: item.id, patch: { status: "inbox" } }) } }),
+        onSuccess: () =>
+          toast.success(status === "wardrobe" ? (person ? `Im Schrank von ${person.name}` : "Im Schrank") : person ? `Auf der Wunschliste von ${person.name}` : "Auf der Wunschliste", {
+            action: { label: "Rückgängig", onClick: () => update.mutate({ id: item.id, patch: { status: "inbox", person_id: null } }) },
+          }),
         onError: (e) => toast.error(errorMessage(e)),
       },
     );
@@ -165,28 +171,38 @@ function InboxGroup({ record, items }: { record: ImportRecord | null; items: Ite
       {items.length ? (
         <>
           <div className="mt-3 grid grid-cols-2 gap-3.5 px-5">
-            {items.map((i) => (
-              <ItemCard
-                key={i.id}
-                item={i}
-                onClick={() => navigate(`/teil/${i.id}`)}
-                footer={
-                  <div className="flex gap-1.5 px-2.5 pb-2.5">
-                    <button type="button" className="h-9 flex-1 rounded-full bg-primary text-xs font-semibold text-primary-foreground transition active:scale-95" onClick={() => move(i, "wardrobe")}>
-                      In den Schrank
-                    </button>
-                    <button type="button" aria-label={`${i.name} als Wunsch merken`} className="grid size-9 shrink-0 place-items-center rounded-full bg-muted transition active:scale-95" onClick={() => move(i, "wishlist")}>
-                      <Heart className="size-4" />
-                    </button>
-                  </div>
-                }
-              />
-            ))}
+            {items.map((i) => {
+              // Vorschlag nach erkannter Zielgruppe; die andere Person bleibt einen Tipp entfernt.
+              const owner = suggestOwner(people, active, i.audience);
+              const others = people.filter((p) => p.id !== owner?.id);
+              return (
+                <ItemCard
+                  key={i.id}
+                  item={i}
+                  onClick={() => navigate(`/teil/${i.id}`)}
+                  footer={
+                    <div className="flex gap-1.5 px-2.5 pb-2.5">
+                      <button type="button" aria-label={`${i.name} in den Schrank von ${owner?.name ?? ""}`} className="h-10 min-w-0 flex-1 truncate rounded-full bg-primary px-2 text-xs font-semibold text-primary-foreground transition active:scale-95" onClick={() => move(i, "wardrobe", owner)}>
+                        {owner?.name ?? "In den Schrank"}
+                      </button>
+                      {others.map((p) => (
+                        <button key={p.id} type="button" aria-label={`${i.name} in den Schrank von ${p.name}`} title={p.name} className="grid size-10 shrink-0 place-items-center rounded-full border border-border bg-card text-xs font-bold transition active:scale-95" onClick={() => move(i, "wardrobe", p)}>
+                          {p.name.charAt(0).toUpperCase()}
+                        </button>
+                      ))}
+                      <button type="button" aria-label={`${i.name} als Wunsch von ${owner?.name ?? ""} merken`} className="grid size-10 shrink-0 place-items-center rounded-full bg-muted transition active:scale-95" onClick={() => move(i, "wishlist", owner)}>
+                        <Heart className="size-4" />
+                      </button>
+                    </div>
+                  }
+                />
+              );
+            })}
           </div>
           {items.length > 1 && (
             <div className="mt-3 px-5">
-              <Button size="sm" variant="soft" block onClick={() => items.forEach((i) => update.mutate({ id: i.id, patch: { status: "wardrobe" } }))}>
-                Alle {items.length} in den Schrank
+              <Button size="sm" variant="soft" block onClick={() => items.forEach((i) => update.mutate({ id: i.id, patch: { status: "wardrobe", person_id: suggestOwner(people, active, i.audience)?.id ?? null } }))}>
+                Alle {items.length} wie vorgeschlagen einsortieren
               </Button>
             </div>
           )}
@@ -270,7 +286,7 @@ function InboxView({ items: all }: { items: Item[] }) {
         </div>
       )}
       {!groups.length && !loose.length && (
-        <Empty icon={Inbox} title="Eingang ist leer" text="Importierte Käufe landen zuerst hier. Dann entscheidest du mit einem Tippen: in den Schrank oder auf die Wunschliste." />
+        <Empty icon={Inbox} title="Eingang ist leer" text="Importierte Käufe landen zuerst hier. Dann entscheidest du mit einem Tippen, in wessen Schrank ein Teil kommt." />
       )}
       {groups.map((g) => (
         <InboxGroup key={g.record.id} record={g.record} items={g.items} />
@@ -282,11 +298,21 @@ function InboxView({ items: all }: { items: Item[] }) {
 
 export default function Wardrobe({ tab }: { tab: ItemStatus }) {
   const items = useItems();
-  const counts = { wardrobe: byStatus(items.data, "wardrobe").length, wishlist: byStatus(items.data, "wishlist").length, inbox: byStatus(items.data, "inbox").length };
-  const list = byStatus(items.data, tab);
+  const { active } = useActivePerson();
+  const of = (status: ItemStatus) => ofPerson(items.data, active?.id, status);
+  const counts = { wardrobe: of("wardrobe").length, wishlist: of("wishlist").length, inbox: of("inbox").length };
+  const list = of(tab);
   return (
     <div>
-      <PageHeader title="Schrank" subtitle={counts.wardrobe === 1 ? "1 Teil" : `${counts.wardrobe} Teile`} />
+      <PageHeader
+        title={tab === "inbox" ? "Eingang" : "Schrank"}
+        subtitle={tab === "inbox" ? "Gemeinsam für beide Schränke" : [active?.name, counts.wardrobe === 1 ? "1 Teil" : `${counts.wardrobe} Teile`].filter(Boolean).join(" · ")}
+        action={
+          <Link to="/einstellungen" aria-label="Einstellungen und Schrank wählen" className="grid size-11 shrink-0 place-items-center rounded-full border border-border bg-card text-[15px] font-bold">
+            {active?.name.charAt(0).toUpperCase() ?? "?"}
+          </Link>
+        }
+      />
       <div className="mx-5 mb-4 flex rounded-full bg-muted p-1" role="tablist">
         {TABS.map((t) => (
           <Link key={t.id} to={t.to} replace role="tab" aria-selected={tab === t.id} className={cx("flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-sm font-semibold transition", tab === t.id ? "bg-card shadow-soft" : "text-muted-foreground")}>

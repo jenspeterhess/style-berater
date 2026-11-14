@@ -26,7 +26,7 @@ export function Collage({ items, className }: { items: Item[]; className?: strin
  * Ein Outfit-Vorschlag: erst als Collage, auf Wunsch als Anprobe-Bild am Avatar, mit Speichern ins Lookbook.
  * Das Bild wird erst auf Tippen erzeugt, damit kein Guthaben für ungesehene Vorschläge verbraucht wird.
  */
-export function LookCard({ suggestion, items, mode, className }: { suggestion: Suggestion; items: Item[]; mode: Mode; className?: string }) {
+export function LookCard({ suggestion, items, mode, occasion, className }: { suggestion: Suggestion; items: Item[]; mode: Mode; occasion?: string; className?: string }) {
   const parts = suggestion.item_ids.map((id) => items.find((i) => i.id === id)).filter((i): i is Item => !!i);
   const wearableIds = parts.filter((i) => i.cutout_path ?? i.original_path).map((i) => i.id);
   const tryOn = useTryOn(wearableIds, mode);
@@ -52,7 +52,7 @@ export function LookCard({ suggestion, items, mode, className }: { suggestion: S
               disabled={saved}
               onClick={() =>
                 save.mutate(
-                  { title: suggestion.title, reason: suggestion.reason, item_ids: suggestion.item_ids, image_path: tryOn.imagePath, mode },
+                  { title: suggestion.title, reason: suggestion.reason, item_ids: suggestion.item_ids, image_path: tryOn.imagePath, mode, person_id: tryOn.personId, occasion: occasion ?? null },
                   { onSuccess: () => (setSaved(true), toast.success("Im Lookbook gespeichert")), onError: (e) => toast.error(errorMessage(e)) },
                 )
               }

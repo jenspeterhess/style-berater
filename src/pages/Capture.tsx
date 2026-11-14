@@ -5,6 +5,7 @@ import { Camera, Check, ChevronRight, Images, RotateCw, X } from "lucide-react";
 import { toast } from "sonner";
 import { clearDone, dismiss, enqueue, retry, useCaptureQueue } from "@/lib/capture-queue";
 import { ImportZone } from "@/components/ImportZone";
+import { useActivePerson } from "@/lib/people";
 import { FileInput, ItemImage, PageHeader, ProgressBar } from "@/components/ui";
 import { cap, categoryLabel } from "@shared/wardrobe";
 
@@ -14,15 +15,16 @@ export default function Capture() {
   const camera = useRef<HTMLInputElement>(null);
   const gallery = useRef<HTMLInputElement>(null);
   const done = queue.filter((e) => e.item).length;
+  const { active } = useActivePerson();
 
   function add(files: File[]) {
-    if (!enqueue(files, qc)) toast.error("Bitte wähle Fotos aus (JPG, PNG oder WebP).");
+    if (!enqueue(files, qc, active?.id ?? null)) toast.error("Bitte wähle Fotos aus (JPG, PNG oder WebP).");
   }
 
   const tile = "flex flex-1 flex-col items-center gap-3 rounded-(--radius-card) px-4 py-7 text-center shadow-soft transition active:scale-[0.98]";
   return (
     <div>
-      <PageHeader title="Neues Teil" subtitle="Ein Foto genügt. Freistellen, Erkennen und Speichern passieren von selbst." />
+      <PageHeader title="Neues Teil" subtitle={active ? `Ein Foto genügt. Das Teil landet im Schrank von ${active.name}.` : "Ein Foto genügt. Freistellen, Erkennen und Speichern passieren von selbst."} />
       <div className="flex gap-3.5 px-5">
         <button type="button" className={`${tile} bg-primary text-primary-foreground`} onClick={() => camera.current?.click()}>
           <Camera className="size-7" strokeWidth={1.5} />

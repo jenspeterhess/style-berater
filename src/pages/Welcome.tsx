@@ -21,7 +21,7 @@ export default function Welcome() {
   const qc = useQueryClient();
   const profile = useProfile(session?.user.id);
   const [busy, setBusy] = useState(false);
-  if (profile.data?.consent_at) return <Navigate to={profile.data.avatar_path ? "/heute" : "/avatar"} replace />;
+  if (profile.data?.consent_at) return <Navigate to="/heute" replace />;
 
   async function agree() {
     setBusy(true);
@@ -31,7 +31,7 @@ export default function Welcome() {
       return toast.error("Das hat nicht geklappt. Bitte versuche es erneut.");
     }
     await qc.invalidateQueries({ queryKey: ["profile"] });
-    navigate("/avatar", { replace: true });
+    navigate("/heute", { replace: true });
   }
 
   return (

@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Inbox, RefreshCw, Settings, Shirt, Sparkles, UserRound } from "lucide-react";
+import { ChevronRight, Inbox, RefreshCw, Shirt, Sparkles, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { byStatus, useItems, useProfile } from "@/lib/data";
-import { useSession } from "@/lib/session";
+import { byStatus, ofPerson, useItems } from "@/lib/data";
+import { useActivePerson } from "@/lib/people";
 import { useSuggest } from "@/lib/suggest";
 import { LookCard } from "@/components/LookCard";
 import { Button, Chip, ChipRow, Empty, ModeToggle, PageHeader, Spinner, useStoredMode } from "@/components/ui";
@@ -14,9 +14,12 @@ import { OCCASIONS, type OccasionId, type Suggestion } from "@shared/wardrobe";
 type Stored = { day: string; occasion: OccasionId; suggestion: Suggestion; seen: string[][] };
 const today = () => new Date().toISOString().slice(0, 10);
 
-function loadStored(ids: Set<string>): Stored | null {
+// Jede Person hat ihren eigenen Vorschlag des Tages.
+const storeKey = (personId: string | undefined) => `heute-${personId ?? ""}`;
+
+function loadStored(key: string, ids: Set<string>): Stored | null {
   try {
-    const s = JSON.parse(localStorage.getItem("heute") ?? "null") as Stored | null;
+    const s = JSON.parse(localStorage.getItem(key) ?? "null") as Stored | null;
     // Nur der Vorschlag von heute zählt – und nur, wenn es alle Teile noch gibt.
     return s && s.day === today() && s.suggestion.item_ids.every((id) => ids.has(id)) ? s : null;
   } catch {
@@ -30,15 +33,16 @@ function greeting() {
 }
 
 export default function Today() {
-  const session = useSession();
-  const profile = useProfile(session?.user.id).data;
+  const { active } = useActivePerson();
   const items = useItems();
-  const wardrobe = byStatus(items.data, "wardrobe");
+  const wardrobe = ofPerson(items.data, active?.id, "wardrobe");
   const inbox = byStatus(items.data, "inbox").length;
   const suggest = useSuggest();
   const [mode, setMode] = useStoredMode();
-  const [stored, setStored] = useState<Stored | null | undefined>(undefined);
-  const current = stored === undefined ? loadStored(new Set(wardrobe.map((i) => i.id))) : stored;
+  // Frisch erzeugte Vorschläge je Person; sonst gilt der gespeicherte von heute.
+  const key = storeKey(active?.id);
+  const [fresh, setFresh] = useState<Record<string, Stored>>({});
+  const current = fresh[key] ?? loadStored(key, new Set(wardrobe.map((i) => i.id)));
   const [occasion, setOccasion] = useState<OccasionId | null>(null);
   const chosen = occasion ?? current?.occasion ?? "freizeit";
 
@@ -50,8 +54,8 @@ export default function Today() {
         onSuccess: ([s]) => {
           if (!s) return toast.message("Für diesen Anlass findet sich gerade keine Kombination in deinem Schrank.");
           const next: Stored = { day: today(), occasion: chosen, suggestion: s, seen: [...seen, s.item_ids].slice(-8) };
-          localStorage.setItem("heute", JSON.stringify(next));
-          setStored(next);
+          localStorage.setItem(key, JSON.stringify(next));
+          setFresh((f) => ({ ...f, [key]: next }));
         },
         onError: (e) => toast.error(errorMessage(e)),
       },
@@ -62,11 +66,11 @@ export default function Today() {
   return (
     <div>
       <PageHeader
-        title={greeting()}
+        title={active ? `${greeting()}, ${active.name}` : greeting()}
         subtitle={date}
         action={
-          <Link to="/einstellungen" aria-label="Einstellungen" className="grid size-11 place-items-center rounded-full bg-card shadow-soft">
-            <Settings className="size-5" strokeWidth={1.5} />
+          <Link to="/einstellungen" aria-label="Einstellungen und Schrank wählen" className="grid size-11 shrink-0 place-items-center rounded-full border border-border bg-card text-[15px] font-bold">
+            {active?.name.charAt(0).toUpperCase() ?? "?"}
           </Link>
         }
       />
@@ -81,14 +85,14 @@ export default function Today() {
             <ChevronRight className="size-4" />
           </Link>
         )}
-        {profile && !profile.avatar_path && (
+        {active && !active.avatar_path && (
           <Link to="/avatar" className="flex animate-rise items-center gap-3.5 rounded-(--radius-card) bg-card p-4 shadow-soft">
             <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted">
               <UserRound className="size-5" strokeWidth={1.5} />
             </span>
             <span className="flex-1">
-              <span className="block text-sm font-semibold">{ARTIFACT ? "Eigenes Foto hinzufügen" : "Avatar erstellen"}</span>
-              <span className="block text-xs text-muted-foreground">Damit du Outfits an dir selbst siehst</span>
+              <span className="block text-sm font-semibold">{ARTIFACT ? "Eigenes Foto hinzufügen" : `Avatar für ${active.name} erstellen`}</span>
+              <span className="block text-xs text-muted-foreground">Damit die Outfits an der Person selbst zu sehen sind</span>
             </span>
             <ChevronRight className="size-4" />
           </Link>
@@ -129,7 +133,7 @@ export default function Today() {
                   {!suggest.isPending && <RefreshCw className="size-4" />} Anderer Vorschlag
                 </Button>
               </div>
-              <LookCard key={current.suggestion.item_ids.join()} suggestion={current.suggestion} items={wardrobe} mode={mode} className="animate-rise" />
+              <LookCard key={current.suggestion.item_ids.join()} suggestion={current.suggestion} items={wardrobe} mode={mode} occasion={current.occasion} className="animate-rise" />
             </div>
           ) : (
             <div className="mt-4 px-5">

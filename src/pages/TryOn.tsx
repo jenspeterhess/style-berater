@@ -3,7 +3,8 @@ import { Link, useSearchParams } from "react-router-dom";
 import { BookHeart, Check, RotateCcw, Shirt, Sparkles, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { byStatus, useItems, useSaveOutfit, wearable } from "@/lib/data";
+import { ofPerson, useItems, useSaveOutfit, wearable } from "@/lib/data";
+import { useActivePerson } from "@/lib/people";
 import { useTryOn } from "@/lib/tryon";
 import { Button, Empty, ItemImage, ModeToggle, PageHeader, RenderOverlay, Spinner, StorageImage, cx, useStoredMode } from "@/components/ui";
 import { AvatarLook } from "@/components/AvatarLook";
@@ -14,7 +15,8 @@ type Selection = Record<string, string | undefined>;
 
 export default function TryOn() {
   const items = useItems();
-  const list = useMemo(() => wearable(items.data), [items.data]);
+  const { active } = useActivePerson();
+  const list = useMemo(() => wearable(items.data, active?.id), [items.data, active?.id]);
   const [params] = useSearchParams();
   const [mode, setMode] = useStoredMode();
   const [picked, setPicked] = useState<Selection | null>(null);
@@ -34,7 +36,7 @@ export default function TryOn() {
 
   const ids = TRYON_ROWS.map((r) => selection[r.id]).filter((id): id is string => !!id && list.some((i) => i.id === id));
   const tryOn = useTryOn(ids, mode);
-  const without = byStatus(items.data, "wardrobe").length - list.length;
+  const without = ofPerson(items.data, active?.id, "wardrobe").length - list.length;
 
   const toggle = (item: Item) => {
     const row = rowOf(item.category);
@@ -51,8 +53,8 @@ export default function TryOn() {
   if (!tryOn.avatarPath && !ARTIFACT)
     return (
       <div>
-        <PageHeader title="Anprobe" />
-        <Empty icon={UserRound} title="Erst dein Avatar" text="Mit einem Selfie und einem Ganzkörperfoto entsteht dein Avatar. An ihm probierst du dann jedes Outfit an.">
+        <PageHeader title="Anprobe" subtitle={active?.name} />
+        <Empty icon={UserRound} title={active ? `Erst der Avatar von ${active.name}` : "Erst dein Avatar"} text="Mit einem Selfie und einem Ganzkörperfoto entsteht der Avatar. An ihm probierst du dann jedes Outfit an.">
           <Link to="/avatar" className="flex h-13 items-center justify-center rounded-full bg-primary font-semibold text-primary-foreground">
             Avatar erstellen
           </Link>
@@ -65,7 +67,7 @@ export default function TryOn() {
   const saved = (ARTIFACT || !!shown) && savedKey === tryOn.key;
   return (
     <div className="pb-20">
-      <PageHeader title="Anprobe" subtitle={ARTIFACT ? "Tippe Teile an – die Vorschau entsteht sofort." : undefined} action={ARTIFACT ? undefined : <ModeToggle mode={mode} onChange={setMode} />} />
+      <PageHeader title="Anprobe" subtitle={ARTIFACT ? "Tippe Teile an – die Vorschau entsteht sofort." : active?.name} action={ARTIFACT ? undefined : <ModeToggle mode={mode} onChange={setMode} />} />
       {ARTIFACT && (
         <div className="studio-bg relative mx-5 overflow-hidden rounded-(--radius-card) shadow-soft">
           <AvatarLook avatarPath={tryOn.avatarPath} items={chosen} className="mx-auto aspect-[2/3] max-h-[58dvh] bg-none!" />
@@ -135,7 +137,7 @@ export default function TryOn() {
               disabled={saved}
               onClick={() =>
                 save.mutate(
-                  { title: `Look vom ${formatDate(new Date().toISOString())}`, item_ids: ids, image_path: shown, mode },
+                  { title: `Look vom ${formatDate(new Date().toISOString())}`, item_ids: ids, image_path: shown, mode, person_id: tryOn.personId },
                   { onSuccess: () => (setSavedKey(tryOn.key), toast.success("Im Lookbook gespeichert")), onError: (e) => toast.error(errorMessage(e)) },
                 )
               }

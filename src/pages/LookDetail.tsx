@@ -3,8 +3,8 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { ArrowLeft, Sparkles, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { useDeleteOutfit, useItems, useOutfits, useProfile, useUpdateOutfit } from "@/lib/data";
-import { useSession } from "@/lib/session";
+import { useDeleteOutfit, useItems, useOutfits, useUpdateOutfit } from "@/lib/data";
+import { useActivePerson } from "@/lib/people";
 import { AvatarLook } from "@/components/AvatarLook";
 import { ARTIFACT } from "@/lib/target";
 import { Collage } from "@/components/LookCard";
@@ -20,7 +20,7 @@ export default function LookDetail() {
   const update = useUpdateOutfit();
   const remove = useDeleteOutfit();
   const [confirm, setConfirm] = useState(false);
-  const avatarPath = useProfile(useSession()?.user.id).data?.avatar_path;
+  const avatarPath = useActivePerson().active?.avatar_path;
   const [title, setTitle] = useState("");
   useEffect(() => setTitle(look?.title ?? ""), [look?.title]);
 

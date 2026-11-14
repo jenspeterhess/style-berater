@@ -4,7 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Camera, Heart, ImagePlus, Shirt, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { byStatus, useDeleteItem, useDeleteOutfit, useItems, useOutfits, useUpdateItem } from "@/lib/data";
+import { ofPerson, useDeleteItem, useDeleteOutfit, useItems, useOutfits, useUpdateItem } from "@/lib/data";
+import { useActivePerson } from "@/lib/people";
 import { runJob, useJobRunning } from "@/lib/jobs";
 import { replacePhoto, type Stage } from "@/lib/pipelines";
 import { useSuggest } from "@/lib/suggest";
@@ -82,6 +83,7 @@ export default function ItemDetail() {
   const remove = useDeleteItem();
   const removeOutfit = useDeleteOutfit();
   const outfits = useOutfits();
+  const { people } = useActivePerson();
   const [deleting, setDeleting] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
@@ -207,6 +209,17 @@ export default function ItemDetail() {
             ))}
           </div>
         </Section>
+        {item.status !== "inbox" && people.length > 1 && (
+          <Section title="Schrank von">
+            <div className="flex flex-wrap gap-2">
+              {people.map((p) => (
+                <Chip key={p.id} active={item.person_id === p.id} onClick={() => patch({ person_id: p.id })}>
+                  {p.name}
+                </Chip>
+              ))}
+            </div>
+          </Section>
+        )}
         <Section title="Für">
           <div className="flex flex-wrap gap-2">
             {AUDIENCES.map((a) => (
@@ -296,7 +309,7 @@ export default function ItemDetail() {
         </Section>
       </div>
 
-      {item.status === "wardrobe" && <Outfits key={item.id} item={item} wardrobe={byStatus(items.data, "wardrobe")} />}
+      {item.status === "wardrobe" && <Outfits key={item.id} item={item} wardrobe={ofPerson(items.data, item.person_id, "wardrobe")} />}
 
       <Confirm
         open={confirm}

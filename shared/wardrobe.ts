@@ -29,6 +29,7 @@ export const AUDIENCE_IDS = AUDIENCES.map((a) => a.id) as [AudienceId, ...Audien
 export const OCCASIONS = [
   { id: "büro", label: "Büro", style: "business" },
   { id: "freizeit", label: "Freizeit", style: "casual" },
+  { id: "date", label: "Date Night", style: "elegant" },
   { id: "abend", label: "Abend", style: "elegant" },
   { id: "sport", label: "Sport", style: "sportlich" },
 ] as const;
@@ -84,6 +85,9 @@ export type Item = {
   currency: string | null;
   purchase_date: string | null;
   import_id: string | null;
+  /** Wessen Schrank. Leer = noch im gemeinsamen Eingang bzw. nicht zugeordnet. */
+  person_id?: string | null;
+  note?: string | null;
   created_at: string;
 };
 
@@ -94,6 +98,9 @@ export type Outfit = {
   item_ids: string[];
   image_path: string | null;
   mode: Mode;
+  person_id?: string | null;
+  occasion?: string | null;
+  last_worn?: string | null;
   created_at: string;
 };
 

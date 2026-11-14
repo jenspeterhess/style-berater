@@ -30,8 +30,14 @@ export function useItems() {
   });
 }
 export const byStatus = (items: Item[] | undefined, status: ItemStatus) => (items ?? []).filter((i) => i.status === status);
-/** Für die Anprobe taugen nur Teile im Schrank, die ein Bild haben. */
-export const wearable = (items: Item[] | undefined) => byStatus(items, "wardrobe").filter((i) => i.cutout_path ?? i.original_path);
+/**
+ * Teile einer Person in einem Status. Der Eingang ist gemeinsam, deshalb zählt dort die Person nicht.
+ * Teile ohne Zuordnung (aus der Zeit vor den zwei Schränken) erscheinen bei allen.
+ */
+export const ofPerson = (items: Item[] | undefined, personId: string | null | undefined, status: ItemStatus) =>
+  byStatus(items, status).filter((i) => status === "inbox" || !i.person_id || i.person_id === personId);
+/** Für die Anprobe taugen nur Teile im Schrank der Person, die ein Bild haben. */
+export const wearable = (items: Item[] | undefined, personId?: string | null) => ofPerson(items, personId, "wardrobe").filter((i) => i.cutout_path ?? i.original_path);
 export const imagePath = (item: Pick<Item, "cutout_path" | "original_path">) => item.cutout_path ?? item.original_path;
 
 export function useImports() {
@@ -108,7 +114,7 @@ export function useDeleteImport() {
 export function useSaveOutfit() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (o: { title: string; reason?: string | null; item_ids: string[]; image_path: string | null; mode: Mode }) =>
+    mutationFn: async (o: { title: string; reason?: string | null; item_ids: string[]; image_path: string | null; mode: Mode; person_id: string | null; occasion?: string | null }) =>
       must(await supabase.from("outfits").insert(o).select().single(), "Der Look konnte nicht gespeichert werden.") as Outfit,
     onSuccess: () => qc.invalidateQueries({ queryKey: ["outfits"] }),
   });

@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { BookHeart } from "lucide-react";
-import { useItems, useOutfits, useProfile } from "@/lib/data";
-import { useSession } from "@/lib/session";
+import { useItems, useOutfits } from "@/lib/data";
+import { useActivePerson } from "@/lib/people";
 import { AvatarLook } from "@/components/AvatarLook";
 import { ARTIFACT } from "@/lib/target";
 import { Collage } from "@/components/LookCard";
@@ -11,12 +11,15 @@ import type { Item } from "@shared/wardrobe";
 export default function Lookbook() {
   const outfits = useOutfits();
   const items = useItems().data ?? [];
-  const count = outfits.data?.length ?? 0;
-  const avatarPath = useProfile(useSession()?.user.id).data?.avatar_path;
+  const { active } = useActivePerson();
+  // Looks ohne Zuordnung (aus der Zeit vor den zwei Schränken) erscheinen bei beiden.
+  const looks = (outfits.data ?? []).filter((o) => !o.person_id || o.person_id === active?.id);
+  const count = looks.length;
+  const avatarPath = active?.avatar_path;
   const partsOf = (ids: string[]) => ids.map((id) => items.find((i) => i.id === id)).filter((i): i is Item => !!i);
   return (
     <div>
-      <PageHeader title="Lookbook" subtitle={outfits.data ? (count === 1 ? "1 gespeicherter Look" : `${count} gespeicherte Looks`) : undefined} />
+      <PageHeader title="Lookbook" subtitle={outfits.data ? [active?.name, count === 1 ? "1 Look" : `${count} Looks`].filter(Boolean).join(" · ") : undefined} />
       {outfits.isPending ? (
         <div className="grid place-items-center py-20">
           <Spinner />
@@ -31,7 +34,7 @@ export default function Lookbook() {
         </Empty>
       ) : (
         <div className="grid grid-cols-2 gap-3.5 px-5">
-          {outfits.data.map((o) => (
+          {looks.map((o) => (
             <Link key={o.id} to={`/lookbook/${o.id}`} className="animate-rise overflow-hidden rounded-(--radius-card) bg-card shadow-soft transition active:scale-[0.985]">
               {o.image_path ? (
                 <StorageImage path={o.image_path} alt={o.title} fit="cover" className="studio-bg aspect-[2/3] w-full" />

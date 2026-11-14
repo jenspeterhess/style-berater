@@ -3,6 +3,7 @@ import { Navigate, NavLink, Outlet, Route, Routes, useLocation } from "react-rou
 import { BookHeart, Plus, Shirt, Sparkles, Sun } from "lucide-react";
 import { useSession } from "@/lib/session";
 import { byStatus, useItems, useProfile } from "@/lib/data";
+import { useEnsurePeople } from "@/lib/people";
 import { Spinner, cx } from "@/components/ui";
 import Landing from "@/pages/Landing";
 import Auth from "@/pages/Auth";
@@ -40,6 +41,7 @@ function Protected() {
   const session = useSession();
   const location = useLocation();
   const profile = useProfile(session?.user.id);
+  const people = useEnsurePeople(!ARTIFACT && !!profile.data?.consent_at);
   if (session === undefined) return <Loading />;
   if (!session)
     return ARTIFACT ? (
@@ -51,6 +53,14 @@ function Protected() {
       <Navigate to="/anmelden" replace />
     );
   if (profile.isPending) return <Loading />;
+  if (people.failed)
+    return (
+      <div className="flex min-h-dvh flex-col justify-center px-8 text-center">
+        <h1 className="text-3xl">Das hat nicht geklappt</h1>
+        <p className="mt-3 text-[15px] leading-relaxed text-muted-foreground">Die Kleiderschränke konnten nicht geladen werden. Bitte prüfe deine Verbindung und lade die Seite neu.</p>
+      </div>
+    );
+  if (!people.ready) return <Loading />;
   // Ohne Einwilligung in die KI-Verarbeitung geht es nicht weiter.
   if (!profile.data?.consent_at && location.pathname !== "/willkommen") return <Navigate to="/willkommen" replace />;
   return <Outlet />;

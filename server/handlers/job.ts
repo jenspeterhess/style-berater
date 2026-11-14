@@ -29,7 +29,7 @@ async function passthrough(blob: Blob): Promise<Out> {
 const png = (bytes: Uint8Array): Out => ({ bytes, type: "image/png" });
 
 async function avatar(userId: string, input: unknown) {
-  const { selfie_path, body_path } = z.object({ selfie_path: z.string(), body_path: z.string() }).parse(input);
+  const { selfie_path, body_path, person_id } = z.object({ selfie_path: z.string(), body_path: z.string(), person_id: z.string().uuid() }).parse(input);
   const [selfie, body] = await Promise.all([download(userId, selfie_path), download(userId, body_path)]);
   const out = mock()
     ? await passthrough(body)
@@ -41,16 +41,17 @@ async function avatar(userId: string, input: unknown) {
         ),
       );
   const path = await upload(userId, out, "avatar");
-  const { error } = await admin().from("profiles").upsert({ id: userId, avatar_path: path, selfie_path, body_path, updated_at: new Date().toISOString() });
-  if (error) throw new HttpError(500, "Der Avatar konnte nicht gespeichert werden.");
+  // Der Avatar gehört zur Person, nicht zum Konto: Jede Person im Konto hat ihren eigenen.
+  const { data: updated, error } = await admin().from("people").update({ avatar_path: path, selfie_path, body_path }).eq("id", person_id).eq("user_id", userId).select("id");
+  if (error || !updated?.length) throw new HttpError(500, "Der Avatar konnte nicht gespeichert werden.");
   return path;
 }
 
 async function tryon(userId: string, input: unknown) {
-  const { item_ids, mode } = z.object({ item_ids: z.array(z.string().uuid()).min(1).max(6), mode: z.enum(["fast", "quality"]) }).parse(input);
+  const { item_ids, mode, person_id } = z.object({ item_ids: z.array(z.string().uuid()).min(1).max(6), mode: z.enum(["fast", "quality"]), person_id: z.string().uuid() }).parse(input);
   const db = admin();
-  const { data: profile } = await db.from("profiles").select("avatar_path").eq("id", userId).maybeSingle();
-  const avatarPath = profile?.avatar_path as string | undefined;
+  const { data: person } = await db.from("people").select("avatar_path").eq("id", person_id).eq("user_id", userId).maybeSingle();
+  const avatarPath = person?.avatar_path as string | undefined;
   if (!avatarPath) throw new HttpError(400, "Bitte erstelle zuerst deinen Avatar.");
 
   const key = comboKey(item_ids, avatarPath, mode as Mode);
@@ -61,9 +62,9 @@ async function tryon(userId: string, input: unknown) {
   const list = ((rows ?? []) as { id: string; name: string; category: string; cutout_path: string | null; original_path: string | null }[]).filter((i) => i.cutout_path ?? i.original_path);
   if (!list.length) throw new HttpError(400, "Die gewählten Teile haben noch kein Foto.");
 
-  const person = await download(userId, avatarPath);
+  const base = await download(userId, avatarPath);
   let out: Out;
-  if (mock()) out = await passthrough(person);
+  if (mock()) out = await passthrough(base);
   else {
     const garments = await Promise.all(list.map((i) => download(userId, i.cutout_path ?? i.original_path)));
     const desc = list.map((i, n) => `image ${n + 2}: ${categoryLabel(i.category)} – ${i.name}`).join("; ");
@@ -76,7 +77,7 @@ async function tryon(userId: string, input: unknown) {
     const dress = list.some((i) => i.category === "rock_kleid") && !rows.has("oberteil");
     out = png(
       await editImages(
-        [{ blob: person, name: "person.png" }, ...garments.map((b, n) => ({ blob: b, name: `garment${n + 1}.png` }))],
+        [{ blob: base, name: "person.png" }, ...garments.map((b, n) => ({ blob: b, name: `garment${n + 1}.png` }))],
         `Virtual try-on. Image 1 is the person: keep exactly the same face, hair, body, pose, framing, lighting and the plain off-white studio background. Dress this person in the clothing shown in the other images: ${desc}. ${keep.length ? `Keep ${keep.join(", ")} from image 1 unchanged${dress ? " (if the selected garment is a full dress, it replaces the t-shirt as well)" : ""}.` : ""} Do not add any jacket, accessory or other garment that is not shown in the reference images. Each garment must keep its exact colour, logos, pattern, texture and cut, fitted naturally with realistic drape and shadows. Full body visible from head to feet. Photorealistic high-end fashion e-commerce photo. No text.`,
         { mode: mode as Mode, size: "1024x1536" },
       ),

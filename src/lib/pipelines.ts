@@ -34,7 +34,7 @@ async function storePhoto(photo: Blob, onStage: (s: Stage) => void) {
 }
 
 /** Ein fotografiertes Teil in einem Durchgang erfassen: freistellen, erkennen, im Schrank speichern. */
-export async function captureItem(photo: Blob, onStage: (s: Stage) => void): Promise<Item> {
+export async function captureItem(photo: Blob, onStage: (s: Stage) => void, personId: string | null): Promise<Item> {
   const { original, original_path, cutout_path } = await storePhoto(photo, onStage);
   try {
     onStage({ label: "Teil wird erkannt" });
@@ -45,7 +45,7 @@ export async function captureItem(photo: Blob, onStage: (s: Stage) => void): Pro
       // Erkennung fehlgeschlagen: trotzdem speichern, Angaben lassen sich per Chip setzen.
       info = { name: "Neues Teil", category: "oberteil", colors: [], style: "casual", season: "ganzjährig", audience: null };
     }
-    const { data, error } = await insertItem({ ...info, original_path, cutout_path, status: "wardrobe", source: "photo" });
+    const { data, error } = await insertItem({ ...info, original_path, cutout_path, status: "wardrobe", source: "photo", person_id: personId });
     if (error || !data) throw new Error("Das Teil konnte nicht gespeichert werden. Bitte versuche es erneut.");
     return data as Item;
   } catch (e) {
