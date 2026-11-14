@@ -129,7 +129,7 @@ export function productMeta(html: string, base: string) {
   const title = meta("og:title") ?? /<title[^>]*>([^<]+)/i.exec(html)?.[1]?.trim() ?? null;
   if (!image) return null;
   // Preis aus den Shop-Angaben der Seite: Meta-Tags oder die strukturierten Produktdaten (JSON-LD).
-  const raw = meta("product:price:amount") ?? meta("og:price:amount") ?? /"price"\s*:\s*"?(\d{1,6}(?:[.,]\d{1,2})?)"?/.exec(html)?.[1] ?? null;
+  const raw = meta("product:price:amount") ?? meta("og:price:amount") ?? /itemprop=["']price["'][^>]*content=["'](\d{1,6}(?:[.,]\d{1,2})?)["']/i.exec(html)?.[1] ?? /"(?:price|lowPrice)"\s*:\s*"?(\d{1,6}(?:[.,]\d{1,2})?)"?/.exec(html)?.[1] ?? null;
   const amount = raw ? Number(raw.replace(",", ".")) : NaN;
   const price = Number.isFinite(amount) && amount > 0 && amount < 100000 ? amount : null;
   const currency = meta("product:price:currency") ?? meta("og:price:currency") ?? /"priceCurrency"\s*:\s*"([A-Z]{3})"/.exec(html)?.[1] ?? null;
