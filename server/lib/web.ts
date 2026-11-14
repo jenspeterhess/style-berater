@@ -128,20 +128,25 @@ export function productMeta(html: string, base: string) {
   const image = meta("og:image") ?? meta("twitter:image");
   const title = meta("og:title") ?? /<title[^>]*>([^<]+)/i.exec(html)?.[1]?.trim() ?? null;
   if (!image) return null;
+  // Preis aus den Shop-Angaben der Seite: Meta-Tags oder die strukturierten Produktdaten (JSON-LD).
+  const raw = meta("product:price:amount") ?? meta("og:price:amount") ?? /"price"\s*:\s*"?(\d{1,6}(?:[.,]\d{1,2})?)"?/.exec(html)?.[1] ?? null;
+  const amount = raw ? Number(raw.replace(",", ".")) : NaN;
+  const price = Number.isFinite(amount) && amount > 0 && amount < 100000 ? amount : null;
+  const currency = meta("product:price:currency") ?? meta("og:price:currency") ?? /"priceCurrency"\s*:\s*"([A-Z]{3})"/.exec(html)?.[1] ?? null;
   try {
-    return { image: new URL(image, base).toString(), title: title?.slice(0, 150) ?? null };
+    return { image: new URL(image, base).toString(), title: title?.slice(0, 150) ?? null, price, currency };
   } catch {
     return null;
   }
 }
 
 /** Produktseite hinter einem Link (auch hinter Weiterleitungen aus Newsletter-Links) → großes Produktbild. */
-export async function fetchProductImage(link: string): Promise<(WebImage & { title: string | null; page: string }) | null> {
+export async function fetchProductImage(link: string): Promise<(WebImage & { title: string | null; page: string; price: number | null; currency: string | null }) | null> {
   const hit = await safeFetch(link, "text/html", 9000);
   if (!hit || hit.url.pathname === "/" || !(hit.res.headers.get("content-type") ?? "").includes("text/html")) return null;
   const html = await readLimited(hit.res, 3_000_000).catch(() => null);
   const meta = html && productMeta(html.toString("utf8"), hit.url.toString());
   if (!meta) return null;
   const img = await fetchBest(meta.image);
-  return img ? { ...img, title: meta.title, page: `${hit.url.origin}${hit.url.pathname}` } : null;
+  return img ? { ...img, title: meta.title, page: `${hit.url.origin}${hit.url.pathname}`, price: meta.price, currency: meta.currency } : null;
 }

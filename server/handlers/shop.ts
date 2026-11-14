@@ -29,7 +29,10 @@ async function withPhoto(userId: string, tip: z.infer<typeof Tips>["tips"][numbe
   const hint = image && image.startsWith("https://") ? image : null;
   let img: WebImage | null = null;
   try {
-    img = (await fetchProductImage(tip.url)) ?? (hint ? await fetchImage(hint) : null);
+    const page = await fetchProductImage(tip.url);
+    // Fehlt der Preis aus der Suche, gilt der, den die Shop-Seite selbst ausweist (nur Euro).
+    if (page?.price && rest.price == null && (!page.currency || page.currency === "EUR")) rest.price = page.price;
+    img = page ?? (hint ? await fetchImage(hint) : null);
   } catch {
     img = null;
   }
