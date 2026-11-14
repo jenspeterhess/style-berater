@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronRight, Inbox, RefreshCw, Shirt, Sparkles, UserRound } from "lucide-react";
+import { ChevronRight, RefreshCw, Shirt, Sparkles, UserRound } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
 import { byStatus, ofPerson, useItems } from "@/lib/data";
@@ -77,17 +77,18 @@ export default function Today() {
 
       <div className="flex flex-col gap-3 px-5">
         {inbox > 0 && (
-          <Link to="/eingang" className="flex animate-rise items-center gap-3.5 rounded-(--radius-card) bg-accent p-4">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-card">
-              <Inbox className="size-5" strokeWidth={1.5} />
+          <Link to="/eingang" className="flex animate-rise items-center gap-3.5 rounded-(--radius-card) bg-card p-3.5">
+            <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-accent font-serif text-xl font-bold text-accent-foreground">{inbox}</span>
+            <span className="flex-1">
+              <span className="block text-[15px] font-semibold">{inbox === 1 ? "Neues Teil im Eingang" : "Neue Teile im Eingang"}</span>
+              <span className="block text-[13px] text-muted-foreground">Noch nicht einsortiert</span>
             </span>
-            <span className="flex-1 text-sm font-semibold">{inbox === 1 ? "1 neues Teil wartet im Eingang" : `${inbox} neue Teile warten im Eingang`}</span>
             <ChevronRight className="size-4" />
           </Link>
         )}
         {active && !active.avatar_path && (
-          <Link to="/avatar" className="flex animate-rise items-center gap-3.5 rounded-(--radius-card) bg-card p-4 shadow-soft">
-            <span className="grid size-10 shrink-0 place-items-center rounded-full bg-muted">
+          <Link to="/avatar" className="flex animate-rise items-center gap-3.5 rounded-(--radius-card) bg-card p-3.5">
+            <span className="grid size-11 shrink-0 place-items-center rounded-[14px] bg-muted">
               <UserRound className="size-5" strokeWidth={1.5} />
             </span>
             <span className="flex-1">
@@ -114,7 +115,7 @@ export default function Today() {
       ) : (
         <section className="mt-6">
           <div className="flex items-end justify-between gap-3 px-5">
-            <h2 className="text-[1.7rem] leading-tight">Was ziehe ich heute an?</h2>
+            <h2 className="text-2xl leading-tight">Was ziehe ich heute an?</h2>
           </div>
           <div className="mt-3 px-5">
             <ChipRow label="Anlass">

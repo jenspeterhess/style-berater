@@ -1,24 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --font-serif: "Cormorant Garamond", ui-serif, Georgia, serif;
-  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  /* Überschriften: Bricolage Grotesque, Fließtext: Instrument Sans. */
+  --font-serif: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
 
-  --color-background: oklch(0.975 0.008 80);
-  --color-foreground: oklch(0.22 0.02 45);
-  --color-card: oklch(0.993 0.004 85);
-  --color-primary: oklch(0.27 0.03 45);
-  --color-primary-foreground: oklch(0.975 0.008 80);
-  --color-muted: oklch(0.94 0.012 75);
-  --color-muted-foreground: oklch(0.5 0.02 55);
-  --color-accent: oklch(0.91 0.025 70);
-  --color-border: oklch(0.9 0.012 70);
-  --color-studio: oklch(0.955 0.01 78);
-  --color-destructive: oklch(0.5 0.17 28);
+  /* Ruhige, fast einfarbige Palette. Einziger Farbakzent ist das dunkle Grün (neu, aktiv, speichern). */
+  --color-background: #f5f4f1;
+  --color-foreground: #1c1b19;
+  --color-card: #ffffff;
+  --color-primary: #1c1b19;
+  --color-primary-foreground: #ffffff;
+  --color-muted: #eceae5;
+  --color-muted-foreground: #66625b;
+  --color-accent: #1f4d3a;
+  --color-accent-foreground: #ffffff;
+  --color-border: #e2dfd8;
+  --color-studio: #f1efeb;
+  --color-destructive: #a8321f;
 
-  --radius-card: 1.25rem;
-  --shadow-soft: 0 1px 2px oklch(0.3 0.03 50 / 0.04), 0 12px 32px -12px oklch(0.3 0.03 50 / 0.18);
-  --shadow-lift: 0 2px 4px oklch(0.3 0.03 50 / 0.06), 0 24px 48px -16px oklch(0.3 0.03 50 / 0.28);
+  --radius-card: 1.375rem;
+  --shadow-soft: 0 1px 2px rgb(28 27 25 / 0.04), 0 10px 28px -18px rgb(28 27 25 / 0.22);
+  --shadow-lift: 0 2px 4px rgb(28 27 25 / 0.06), 0 18px 40px -20px rgb(28 27 25 / 0.4);
 
   --animate-shimmer: shimmer 1.8s linear infinite;
   --animate-rise: rise 0.5s cubic-bezier(0.2, 0.8, 0.2, 1) both;
@@ -58,7 +61,7 @@
     -webkit-font-smoothing: antialiased;
     overscroll-behavior-y: none;
   }
-  h1, h2, h3 { font-family: var(--font-serif); font-weight: 500; letter-spacing: -0.01em; }
+  h1, h2, h3 { font-family: var(--font-serif); font-weight: 700; letter-spacing: -0.02em; }
   button { cursor: pointer; }
   button:disabled { cursor: default; }
   :focus-visible { outline: 2px solid var(--color-primary); outline-offset: 2px; }
@@ -75,7 +78,7 @@
   &::-webkit-scrollbar { display: none; }
 }
 @utility studio-bg {
-  background: radial-gradient(ellipse at 50% 30%, var(--color-card), var(--color-studio) 75%);
+  background: var(--color-studio);
 }
 @utility safe-bottom {
   padding-bottom: env(safe-area-inset-bottom);

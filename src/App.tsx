@@ -71,7 +71,7 @@ const NAV = [
   { to: "/schrank", label: "Schrank", icon: Shirt, also: ["/wunschliste", "/eingang", "/teil"] },
   { to: "/erfassen", label: "Erfassen", icon: Plus, primary: true },
   { to: "/anprobe", label: "Anprobe", icon: Sparkles },
-  { to: "/lookbook", label: "Lookbook", icon: BookHeart },
+  { to: "/lookbook", label: "Looks", icon: BookHeart },
 ] as const;
 
 function WithNav() {
@@ -79,30 +79,31 @@ function WithNav() {
   const inbox = byStatus(useItems().data, "inbox").length;
   return (
     <>
-      <main className="pb-[calc(env(safe-area-inset-bottom)+6.5rem)]">
+      <main className="pb-[calc(env(safe-area-inset-bottom)+7.5rem)]">
         <Suspense fallback={<Loading />}>
           <Outlet />
         </Suspense>
       </main>
-      <nav aria-label="Hauptnavigation" className="safe-bottom fixed inset-x-0 bottom-0 z-40 mx-auto w-full max-w-md border-t border-border/70 bg-card/92 backdrop-blur-xl">
-        <ul className="flex h-[4.5rem] items-center justify-around px-2">
+      {/* Schwebende dunkle Leiste: Der aktive Bereich steht als helle Pille mit Namen, die anderen nur als Symbol. */}
+      <nav aria-label="Hauptnavigation" className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+0.875rem)] z-40 mx-auto w-full max-w-md px-4">
+        <ul className="flex h-[4.25rem] items-center justify-between rounded-full bg-primary px-2.5 shadow-lift">
           {NAV.map((n) => {
             const active = pathname.startsWith(n.to) || ("also" in n && n.also.some((a) => pathname.startsWith(a)));
             if ("primary" in n)
               return (
                 <li key={n.to}>
-                  <NavLink to={n.to} aria-label="Teil erfassen" className="grid size-14 -translate-y-3 place-items-center rounded-full bg-primary text-primary-foreground shadow-lift transition active:scale-95">
-                    <n.icon className="size-6" strokeWidth={1.75} />
+                  <NavLink to={n.to} aria-label="Teil erfassen" className={cx("grid size-[3.25rem] place-items-center rounded-full bg-card text-foreground transition active:scale-95", active && "ring-2 ring-card ring-offset-2 ring-offset-primary")}>
+                    <n.icon className="size-[22px]" strokeWidth={2.4} />
                   </NavLink>
                 </li>
               );
             return (
-              <li key={n.to} className="flex-1">
-                <NavLink to={n.to} className={cx("relative flex flex-col items-center gap-1 py-2 text-[11px] font-semibold transition", active ? "text-foreground" : "text-muted-foreground")}>
-                  <n.icon className="size-[22px]" strokeWidth={active ? 2 : 1.5} />
-                  {n.label}
+              <li key={n.to}>
+                <NavLink to={n.to} aria-label={n.label} className={cx("relative flex h-12 items-center justify-center gap-2 rounded-full text-sm font-semibold transition", active ? "bg-card px-4 text-foreground" : "w-12 text-[#b8b4ac]")}>
+                  <n.icon className={active ? "size-[18px]" : "size-[22px]"} strokeWidth={active ? 2 : 1.8} />
+                  {active && n.label}
                   {n.to === "/schrank" && inbox > 0 && (
-                    <span className="absolute top-1 left-1/2 ml-2 grid h-4 min-w-4 place-items-center rounded-full bg-primary px-1 text-[10px] text-primary-foreground" aria-label={`${inbox} neu im Eingang`}>
+                    <span className={cx("grid h-[18px] min-w-[18px] place-items-center rounded-full bg-accent px-1 text-[10px] text-accent-foreground", !active && "absolute top-1 right-0.5")} aria-label={`${inbox} neu im Eingang`}>
                       {inbox}
                     </span>
                   )}

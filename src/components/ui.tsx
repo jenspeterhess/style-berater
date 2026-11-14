@@ -17,8 +17,8 @@ export function Button({ variant = "primary", size = "md", busy, block, classNam
         "inline-flex items-center justify-center gap-2 rounded-full font-semibold whitespace-nowrap transition active:scale-[0.98] disabled:opacity-45 disabled:active:scale-100",
         size === "md" ? "h-13 px-5 text-[15px]" : "h-10 px-4 text-sm",
         block && "w-full",
-        variant === "primary" && "bg-primary text-primary-foreground shadow-soft",
-        variant === "soft" && "bg-muted text-foreground",
+        variant === "primary" && "bg-primary text-primary-foreground",
+        variant === "soft" && "border border-border bg-card text-foreground",
         variant === "ghost" && "text-foreground hover:bg-muted",
         variant === "danger" && "bg-destructive/10 text-destructive",
         className,
@@ -46,7 +46,7 @@ export function Chip({ active, onClick, children, swatch }: { active?: boolean; 
       aria-pressed={active}
       onClick={onClick}
       className={cx(
-        "inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-sm font-medium whitespace-nowrap transition active:scale-95",
+        "inline-flex h-10 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold whitespace-nowrap transition active:scale-95",
         active ? "border-primary bg-primary text-primary-foreground" : "border-border bg-card text-foreground",
       )}
     >
@@ -74,8 +74,8 @@ export function PageHeader({ title, subtitle, action, back }: { title: ReactNode
     <header className="flex items-start gap-3 px-5 pt-[calc(env(safe-area-inset-top)+1.25rem)] pb-4">
       {back}
       <div className="min-w-0 flex-1">
-        <h1 className="text-[2rem] leading-[1.05]">{title}</h1>
-        {subtitle && <p className="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>}
+        {subtitle && <p className="text-sm font-medium text-muted-foreground">{subtitle}</p>}
+        <h1 className="mt-0.5 text-[2.25rem] leading-[1.04] text-balance">{title}</h1>
       </div>
       {action}
     </header>
@@ -124,7 +124,7 @@ export function ItemImage({ item, className, padded = true }: { item: Item; clas
   const path = imagePath(item);
   if (path) return <StorageImage path={path} alt={item.name} className={cx("studio-bg", padded && "p-3", className)} />;
   const Icon = CATEGORY_ICON[item.category] ?? Shirt;
-  const color = COLOR_SWATCH[item.colors[0] ?? ""] ?? "var(--color-accent)";
+  const color = COLOR_SWATCH[item.colors[0] ?? ""] ?? "var(--color-muted)";
   return (
     <div className={cx("studio-bg grid place-items-center", className)} role="img" aria-label={`${item.name} (noch ohne Foto)`}>
       <span className="grid size-[46%] max-h-24 max-w-24 place-items-center rounded-full border border-black/5 shadow-soft" style={{ background: color }}>

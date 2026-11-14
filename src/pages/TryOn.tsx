@@ -125,7 +125,7 @@ export default function TryOn() {
       )}
 
       {ids.length > 0 && (
-        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+4.5rem)] z-30 mx-auto flex w-full max-w-md animate-rise gap-2 bg-gradient-to-t from-background via-background/95 to-transparent px-5 pt-6 pb-3">
+        <div className="fixed inset-x-0 bottom-[calc(env(safe-area-inset-bottom)+5.75rem)] z-30 mx-auto flex w-full max-w-md animate-rise gap-2 bg-gradient-to-t from-background via-background/95 to-transparent px-5 pt-6 pb-3">
           <button type="button" aria-label="Auswahl zurücksetzen" className="grid size-13 shrink-0 place-items-center rounded-full bg-card shadow-soft" onClick={() => setPicked({})}>
             <RotateCcw className="size-[18px]" />
           </button>

@@ -60,7 +60,7 @@ export function ImportZone({ compact }: { compact?: boolean }) {
         onDragOver={(e) => (e.preventDefault(), setOver(true))}
         onDragLeave={() => setOver(false)}
         onDrop={onDrop}
-        className={cx("rounded-(--radius-card) border-2 border-dashed bg-card text-center transition", compact ? "px-4 py-5" : "px-5 py-7", over ? "border-primary bg-accent" : "border-border")}
+        className={cx("rounded-(--radius-card) border-2 border-dashed bg-card text-center transition", compact ? "px-4 py-5" : "px-5 py-7", over ? "border-accent bg-muted" : "border-border")}
       >
         {stage ? (
           <div className="py-2" role="status">

@@ -185,7 +185,7 @@ export default function ItemDetail() {
         <Saved aria-label="Name" value={item.name} onSave={(name) => name && patch({ name })} className="w-full bg-transparent font-serif text-[2rem] leading-tight focus:outline-none" />
 
         {item.status !== "wardrobe" && (
-          <div className="mt-4 rounded-(--radius-card) bg-accent p-4">
+          <div className="mt-4 rounded-(--radius-card) bg-muted p-4">
             <p className="text-sm font-semibold">{item.status === "inbox" ? "Dieses Teil liegt noch im Eingang." : "Dieses Teil steht auf deiner Wunschliste."}</p>
             <div className="mt-3 flex gap-2">
               <Button size="sm" className="flex-1" onClick={() => (patch({ status: "wardrobe" }), toast.success("Im Schrank"))}>

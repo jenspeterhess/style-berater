@@ -317,7 +317,7 @@ export default function Wardrobe({ tab }: { tab: ItemStatus }) {
         {TABS.map((t) => (
           <Link key={t.id} to={t.to} replace role="tab" aria-selected={tab === t.id} className={cx("flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full text-sm font-semibold transition", tab === t.id ? "bg-card shadow-soft" : "text-muted-foreground")}>
             {t.label}
-            {t.id !== "wardrobe" && counts[t.id] > 0 && <span className={cx("grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px]", t.id === "inbox" ? "bg-primary text-primary-foreground" : "bg-border")}>{counts[t.id]}</span>}
+            {t.id !== "wardrobe" && counts[t.id] > 0 && <span className={cx("grid h-5 min-w-5 place-items-center rounded-full px-1 text-[11px]", t.id === "inbox" ? "bg-accent text-accent-foreground" : "bg-border")}>{counts[t.id]}</span>}
           </Link>
         ))}
       </div>
