@@ -4,7 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Camera, Heart, ImagePlus, Shirt, Sparkles, Trash2, Wand2 } from "lucide-react";
 import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
-import { byStatus, useDeleteItem, useItems, useUpdateItem } from "@/lib/data";
+import { byStatus, useDeleteItem, useDeleteOutfit, useItems, useOutfits, useUpdateItem } from "@/lib/data";
 import { runJob, useJobRunning } from "@/lib/jobs";
 import { replacePhoto, type Stage } from "@/lib/pipelines";
 import { useSuggest } from "@/lib/suggest";
@@ -80,6 +80,9 @@ export default function ItemDetail() {
   const item = items.data?.find((i) => i.id === id);
   const update = useUpdateItem();
   const remove = useDeleteItem();
+  const removeOutfit = useDeleteOutfit();
+  const outfits = useOutfits();
+  const [deleting, setDeleting] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [showOriginal, setShowOriginal] = useState(false);
   const [stage, setStage] = useState<Stage | null>(null);
@@ -107,6 +110,21 @@ export default function ItemDetail() {
   const patch = (p: Partial<Item>) => update.mutate({ id: item.id, patch: p }, { onError: (e) => toast.error(errorMessage(e)) });
   const hasPhoto = !!(item.cutout_path ?? item.original_path);
   const back = () => (history.length > 1 ? navigate(-1) : navigate("/schrank"));
+  // Looks, die dieses Teil enthalten: Sie werden beim Löschen mit entfernt – davor wird gewarnt.
+  const affected = (outfits.data ?? []).filter((o) => o.item_ids.includes(item.id));
+
+  async function removeWithLooks() {
+    setDeleting(true);
+    try {
+      for (const look of affected) await removeOutfit.mutateAsync(look.id);
+      await remove.mutateAsync(item!);
+      toast.success(affected.length ? (affected.length === 1 ? "Teil und 1 Look gelöscht" : `Teil und ${affected.length} Looks gelöscht`) : "Teil gelöscht");
+      navigate("/schrank", { replace: true });
+    } catch (e) {
+      toast.error(errorMessage(e));
+      setDeleting(false);
+    }
+  }
 
   async function newPhoto(files: File[]) {
     try {
@@ -283,11 +301,17 @@ export default function ItemDetail() {
       <Confirm
         open={confirm}
         onClose={() => setConfirm(false)}
-        title="Teil löschen?"
-        text={`„${item.name}“ wird samt Fotos gelöscht. Gespeicherte Looks behalten ihr Bild.`}
-        action="Löschen"
-        busy={remove.isPending}
-        onConfirm={() => remove.mutate(item, { onSuccess: () => navigate("/schrank", { replace: true }), onError: (e) => toast.error(errorMessage(e)) })}
+        title={affected.length > 1 ? "Teil und Looks löschen?" : affected.length ? "Teil und Look löschen?" : "Teil löschen?"}
+        text={
+          outfits.isPending
+            ? "Einen Moment, ich prüfe, ob das Teil in gespeicherten Looks vorkommt."
+            : affected.length
+              ? `„${item.name}“ wird samt Fotos gelöscht. Achtung: ${affected.length === 1 ? "1 gespeicherter Look enthält" : `${affected.length} gespeicherte Looks enthalten`} dieses Teil und ${affected.length === 1 ? "wird" : "werden"} ebenfalls gelöscht: ${affected.slice(0, 4).map((o) => `„${o.title}“`).join(", ")}${affected.length > 4 ? " und weitere" : ""}. Das lässt sich nicht rückgängig machen.`
+              : `„${item.name}“ wird samt Fotos gelöscht. Das Teil kommt in keinem gespeicherten Look vor.`
+        }
+        action={affected.length ? (affected.length === 1 ? "Teil und Look löschen" : "Teil und Looks löschen") : "Löschen"}
+        busy={deleting || outfits.isPending}
+        onConfirm={removeWithLooks}
       />
     </div>
   );
