@@ -19,6 +19,7 @@ const Tips = z.object({
 });
 
 const AUDIENCE_TEXT: Record<string, string> = { damen: "Damen", herren: "Herren", kinder: "Kinder", unisex: "Unisex" };
+let debug: unknown;
 const norm = (u: string) => u.replace(/[#?].*$/, "").replace(/\/+$/, "").toLowerCase();
 
 async function search(body: z.infer<typeof Body>): Promise<ShopTips["tips"]> {
@@ -47,7 +48,7 @@ async function search(body: z.infer<typeof Body>): Promise<ShopTips["tips"]> {
   // Nur Links, die wirklich in den Suchergebnissen standen – so landet kein erfundener Link in der App.
   const known = new Set([...urls].map(norm));
   const tips = parsed.tips.filter((t) => t.url.startsWith("https://") && known.has(norm(t.url)));
-  if (!tips.length) console.warn("[shop] kein Treffer bestätigt", JSON.stringify({ known: [...known].slice(0, 40), vorgeschlagen: parsed.tips.map((t) => t.url), text: text.slice(-600) }));
+  if (!tips.length) debug = { known: [...known].slice(0, 40), vorgeschlagen: parsed.tips.map((t) => t.url) };
   if (!tips.length) throw new HttpError(404, "Dazu habe ich gerade kein passendes Angebot gefunden. Versuche es später noch einmal.");
   return tips;
 }
@@ -69,7 +70,7 @@ export default async function handler(req: Request): Promise<Response> {
   } catch (e) {
     const message = e instanceof HttpError ? e.message : "Die Suche hat gerade nicht geklappt. Bitte versuche es erneut.";
     if (!(e instanceof HttpError)) console.error("[shop] unerwarteter Fehler", e);
-    if (path) await save({ status: "error", error: message, tips: [], searched_at: new Date().toISOString() });
+    if (path) await save({ status: "error", error: message, tips: [], searched_at: new Date().toISOString(), ...(debug ? { debug } : {}) } as ShopTips);
     return json({ error: message }, e instanceof HttpError ? e.status : 500);
   }
 }
