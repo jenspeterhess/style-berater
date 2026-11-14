@@ -62,8 +62,9 @@ type ImportResult = {
   currency: string;
   web_images?: number;
   web_sources?: number;
+  diagnostics?: string[];
   /** `image` (Bild als data-Adresse, Artefakt) oder `image_path` (bereits im Speicher abgelegt, Server). */
-  articles: (Classification & { brand: string | null; price: number | null; image?: string | null; image_path?: string | null })[];
+  articles: (Classification & { brand: string | null; price: number | null; image?: string | null; image_path?: string | null; source?: string })[];
 };
 
 /**
@@ -82,6 +83,13 @@ export async function runImport(doc: ParsedDoc, onStage: (s: Stage) => void) {
     .single();
   if (error || !record) throw new Error("Der Import konnte nicht gespeichert werden. Bitte versuche es erneut.");
 
+  // Diagnose zum Import im Browser merken (Eingang → „Details“): woher jedes Bild kam und was nicht ladbar war.
+  if (result.diagnostics)
+    try {
+      localStorage.setItem(`import-details-${record.id}`, JSON.stringify([...result.articles.map((a) => `${a.name}: ${a.source ?? "–"}`), "", ...result.diagnostics]));
+    } catch {
+      /* Speicher voll oder gesperrt – die Diagnose ist nur ein Zusatz */
+    }
   let n = 0, withImage = 0;
   for (const a of result.articles) {
     n++;
@@ -103,7 +111,7 @@ export async function runImport(doc: ParsedDoc, onStage: (s: Stage) => void) {
         original_path ??= a.image_path ?? null;
       }
     }
-    const { image: _image, image_path: _path, ...fields } = a;
+    const { image: _image, image_path: _path, source: _source, ...fields } = a;
     const { error: itemError } = await supabase.from("items").insert({
       ...fields, original_path, cutout_path, status: "inbox", source: "import", import_id: record.id,
       store: result.store, currency: result.currency, purchase_date: result.purchase_date,

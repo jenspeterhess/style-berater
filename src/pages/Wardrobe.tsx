@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { errorMessage } from "@/lib/api";
 import { byStatus, useDeleteImport, useDeleteItem, useImports, useItems, useUpdateItem } from "@/lib/data";
 import { ImportZone } from "@/components/ImportZone";
-import { Button, Chip, ChipRow, Confirm, Empty, ItemCard, PageHeader, Spinner, cx } from "@/components/ui";
+import { Button, Chip, ChipRow, Confirm, Empty, ItemCard, PageHeader, Sheet, Spinner, cx } from "@/components/ui";
 import { CATEGORIES, COLORS, COLOR_SWATCH, OCCASIONS, cap, formatDate, formatPrice, type ImportRecord, type Item, type ItemStatus } from "@shared/wardrobe";
 
 const TABS = [
@@ -113,6 +113,14 @@ function InboxGroup({ record, items }: { record: ImportRecord | null; items: Ite
   const removeItem = useDeleteItem();
   const removeImport = useDeleteImport();
   const [confirm, setConfirm] = useState(false);
+  const [details, setDetails] = useState(false);
+  const detailLines = useMemo(() => {
+    try {
+      return record ? (JSON.parse(localStorage.getItem(`import-details-${record.id}`) ?? "null") as string[] | null) : null;
+    } catch {
+      return null;
+    }
+  }, [record]);
   const meta = record ? [record.store, formatDate(record.purchase_date), formatPrice(record.total, record.currency)].filter(Boolean).join(" · ") : "";
 
   function move(item: Item, status: ItemStatus) {
@@ -131,6 +139,11 @@ function InboxGroup({ record, items }: { record: ImportRecord | null; items: Ite
         <div className="min-w-0 flex-1">
           <h2 className="truncate text-2xl">{record?.title ?? "Weitere Teile"}</h2>
           {meta && <p className="mt-0.5 text-xs text-muted-foreground">{meta}</p>}
+          {detailLines && (
+            <button type="button" className="mt-1 text-xs font-semibold underline underline-offset-2" onClick={() => setDetails(true)}>
+              Details zu den Bildern
+            </button>
+          )}
         </div>
         {record && (
           <button type="button" aria-label="Import löschen" className="grid size-9 shrink-0 place-items-center rounded-full bg-muted" onClick={() => setConfirm(true)}>
@@ -170,6 +183,12 @@ function InboxGroup({ record, items }: { record: ImportRecord | null; items: Ite
       ) : (
         <p className="mt-2 px-5 text-sm text-muted-foreground">Alle Teile aus diesem Import sind einsortiert.</p>
       )}
+      <Sheet open={details} onClose={() => setDetails(false)} title="Bilder dieses Imports">
+        <p className="text-xs text-muted-foreground">Woher jedes Bild kam und welche Adressen sich laden ließen.</p>
+        <ul className="mt-3 flex flex-col gap-1.5 text-xs leading-snug break-all">
+          {detailLines?.map((line, i) => (line ? <li key={i}>{line}</li> : <li key={i} className="my-1.5 h-px bg-border" aria-hidden />))}
+        </ul>
+      </Sheet>
       <Confirm
         open={confirm}
         onClose={() => setConfirm(false)}

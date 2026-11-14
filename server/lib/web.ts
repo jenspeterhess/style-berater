@@ -100,9 +100,22 @@ export async function fetchImage(raw: string, maxBytes = 4_000_000): Promise<Web
 }
 
 /** Erst die große Variante versuchen, sonst das Bild so, wie es verlinkt ist. */
-export async function fetchBest(raw: string) {
+export async function fetchBest(raw: string): Promise<(WebImage & { variant: "groß" | "wie verlinkt" }) | null> {
   const big = enlarge(raw);
-  return (big && (await fetchImage(big))) || (await fetchImage(raw));
+  const large = big ? await fetchImage(big) : null;
+  if (large) return { ...large, variant: "groß" };
+  const plain = await fetchImage(raw);
+  return plain ? { ...plain, variant: "wie verlinkt" } : null;
+}
+
+/** Kurzform einer Adresse für Protokoll und Diagnose: Host und Ende des Pfads, ohne Parameter. */
+export function shortUrl(raw: string) {
+  try {
+    const u = new URL(raw);
+    return `${u.hostname}${u.pathname.length > 34 ? "/…" + u.pathname.slice(-30) : u.pathname}${u.search ? "?…" : ""}`;
+  } catch {
+    return "ungültige Adresse";
+  }
 }
 
 /** Liest Titel und Hauptbild (og:image) aus dem HTML einer Produktseite. */

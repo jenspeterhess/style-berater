@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { admin, api, mock } from "../lib/http";
-import { fetchBest, fetchProductImage } from "../lib/web";
+import { fetchBest, fetchProductImage, shortUrl } from "../lib/web";
 import { imageBlock, parseDataUrl, structured, type ImageInput } from "../lib/claude";
 import { CATEGORY_IDS, COLORS, SEASONS, STYLES } from "../../shared/wardrobe";
 import type Anthropic from "@anthropic-ai/sdk";
@@ -49,10 +49,14 @@ export default api(
   (raw) => Body.parse(raw),
   async ({ body, userId }) => {
     // Große Bilder aus dem Netz zuerst, die kleinen eingebetteten Vorschaubilder als Reserve dahinter.
-    const [pages, linked] = await Promise.all([
-      Promise.all([...new Set(body.links)].map(fetchProductImage)),
-      Promise.all([...new Set(body.imageUrls)].map(fetchBest)),
-    ]);
+    const linkList = [...new Set(body.links)], urlList = [...new Set(body.imageUrls)];
+    const [pages, linked] = await Promise.all([Promise.all(linkList.map(fetchProductImage)), Promise.all(urlList.map(fetchBest))]);
+    // Nachvollziehbar machen, was aus dem Netz kam: je Adresse eine Zeile (ohne Parameter, also ohne persönliche Kennungen).
+    const kb = (n: number) => `${Math.round(n / 1024)} kB`;
+    const diagnostics = [
+      ...urlList.map((u, i) => `Bild ${shortUrl(u)} → ${linked[i] ? `${linked[i]!.variant}, ${kb(linked[i]!.bytes.length)}` : "nicht ladbar"}`),
+      ...linkList.map((u, i) => `Link ${shortUrl(u)} → ${pages[i] ? `Produktbild, ${kb(pages[i]!.bytes.length)}` : "kein Produktbild"}`),
+    ];
     const candidates: Candidate[] = [];
     let total = 0;
     const add = (img: ImageInput, bytes: number, label: string) => {
@@ -110,6 +114,7 @@ export default api(
           if (!error) image_path = path;
         }
         return {
+          source: idx != null ? `${candidates[idx - 1]!.label}, ${kb(candidates[idx - 1]!.bytes)}` : "kein Bild zugeordnet",
           name: a.name.trim().slice(0, 120) || "Artikel",
           category: a.category,
           colors: [...new Set(a.colors)].slice(0, 3),
@@ -131,6 +136,7 @@ export default api(
       /** Wie viele Bilder in groß aus dem Netz kamen, und wie viele Adressen dafür im Dokument standen. */
       web_images: webImages,
       web_sources: new Set([...body.imageUrls, ...body.links]).size,
+      diagnostics,
       articles,
     };
   },
