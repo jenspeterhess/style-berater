@@ -65,13 +65,13 @@ export async function structured<S extends z.ZodType>(opts: {
  * Eine Claude-Anfrage mit Websuche. Liefert den Antworttext und alle Adressen, die in den Suchergebnissen
  * tatsächlich vorkamen – damit sich Links aus der Antwort gegen echte Treffer prüfen lassen.
  */
-export async function searchWeb(opts: { system: string; prompt: string; maxUses?: number }): Promise<{ text: string; urls: Set<string> }> {
+export async function searchWeb(opts: { system: string; prompt: string; maxUses?: number; fetchPages?: number }): Promise<{ text: string; urls: Set<string> }> {
   client ??= new Anthropic({ apiKey: env("ANTHROPIC_API_KEY") });
   const messages: Anthropic.Beta.BetaMessageParam[] = [{ role: "user", content: opts.prompt }];
   const urls = new Set<string>();
   try {
     // Lange Suchen pausieren serverseitig (pause_turn); dann wird dieselbe Anfrage fortgesetzt.
-    for (let round = 0; round < 4; round++) {
+    for (let round = 0; round < 6; round++) {
       const res = await client.beta.messages.create({
         model: MODEL(),
         betas: ["server-side-fallback-2026-07-01"],
@@ -80,7 +80,11 @@ export async function searchWeb(opts: { system: string; prompt: string; maxUses?
         system: opts.system,
         messages,
         output_config: { effort: "low" },
-        tools: [{ type: "web_search_20260209", name: "web_search", max_uses: opts.maxUses ?? 5, user_location: { type: "approximate", country: "DE", timezone: "Europe/Berlin" } }],
+        tools: [
+          { type: "web_search_20260209", name: "web_search", max_uses: opts.maxUses ?? 5, user_location: { type: "approximate", country: "DE", timezone: "Europe/Berlin" } },
+          // Optional: gefundene Seiten öffnen, etwa um einen Preis abzulesen.
+          ...(opts.fetchPages ? [{ type: "web_fetch_20260209" as const, name: "web_fetch" as const, max_uses: opts.fetchPages, max_content_tokens: 8000 }] : []),
+        ],
       });
       for (const block of res.content) {
         if (block.type === "text") continue;
