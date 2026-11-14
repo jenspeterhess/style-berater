@@ -103,3 +103,11 @@ create policy "own files update" on storage.objects for update to authenticated
   using (bucket_id = 'wardrobe' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy "own files delete" on storage.objects for delete to authenticated
   using (bucket_id = 'wardrobe' and (storage.foldername(name))[1] = auth.uid()::text);
+
+-- Zugriffsrechte ausdrücklich vergeben, damit die App unabhängig von der Projekt-Einstellung
+-- "Neue Tabellen automatisch anzeigen" funktioniert. Was ein Konto sehen darf, regeln weiterhin die Policies oben.
+grant usage on schema public to authenticated, service_role;
+grant select, insert, update, delete on public.profiles, public.imports, public.items, public.outfits to authenticated;
+grant select on public.tryon_cache to authenticated;
+grant select, insert on public.jobs to authenticated;
+grant all on public.profiles, public.imports, public.items, public.outfits, public.tryon_cache, public.jobs to service_role;
