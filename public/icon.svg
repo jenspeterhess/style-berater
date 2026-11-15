@@ -1,1 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" fill="#32241c"/><text x="256" y="345" text-anchor="middle" font-family="Georgia, 'Times New Roman', serif" font-style="italic" font-size="300" fill="#faf7f2">S</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <radialGradient id="g" cx="50%" cy="34%" r="80%">
+      <stop offset="0" stop-color="#2c6a50"/>
+      <stop offset="1" stop-color="#173a2c"/>
+    </radialGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#g)"/>
+  <!-- Kleiderbügel -->
+  <path d="M256 214v-22c0-17 10-26 25-33 22-10 35-25 35-47 0-27-22-48-50-48s-50 19-50 48" fill="none" stroke="#f5f4f1" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M256 214 108 318c-22 16-11 50 16 50h264c27 0 38-34 16-50Z" fill="none" stroke="#f5f4f1" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Funke: der Styling-Experte -->
+  <path d="M256 268l12 31 31 12-31 12-12 31-12-31-31-12 31-12z" fill="#e8c98a"/>
+  <path d="M400 108l8 20 20 8-20 8-8 20-8-20-20-8 20-8z" fill="#e8c98a"/>
+</svg>
